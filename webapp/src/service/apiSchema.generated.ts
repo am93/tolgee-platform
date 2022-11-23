@@ -2267,7 +2267,7 @@ export interface components {
        */
       languages?: string[];
       /** @description Format to export to */
-      format: "JSON" | "XLIFF";
+      format: "JSON" | "XLIFF" | "XLIFFANGULAR";
       /**
        * @description Delimiter to structure file content.
        *

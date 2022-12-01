@@ -15,7 +15,7 @@ import org.dom4j.io.XMLWriter
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
-class XliffFileExporter(
+class XliffAngularFileExporter(
   override val translations: List<ExportTranslationView>,
   override val exportParams: ExportParams,
   baseTranslationsProvider: () -> List<ExportTranslationView>,
@@ -42,19 +42,20 @@ class XliffFileExporter(
 
   private fun prepare() {
     translations.forEach { translation ->
-      val path = TextHelper.splitOnNonEscapedDelimiter(translation.key.name, exportParams.structureDelimiter)
-      val resultItem = getResultItem(translation)
-      addToFileElement(resultItem.fileBodyElement, path, translation)
+      val path = TextHelper.splitOnNonEscapedDelimiter(translation.key.name, exportParams.splitByScopeDelimiter)
+      val resultItem = getResultItem(path, translation)
+      val pathItems = path.asSequence().drop(getRealScopeDepth(path)).toMutableList()
+      addToFileElement(resultItem.fileBodyElement, pathItems, translation)
     }
   }
 
   private fun addToFileElement(
     fileBodyElement: Element,
-    pathItems: List<String>,
+    pathItems: MutableList<String>,
     translation: ExportTranslationView
   ) {
     val transUnitElement = fileBodyElement.addElement("trans-unit")
-      .addAttribute("id", pathItems.joinToString(exportParams.structureDelimiter.toString()))
+      .addAttribute("id", pathItems.joinToString(exportParams.splitByScopeDelimiter.toString()))
       .addAttribute("datatype", "html")
 
     baseTranslations[translation.key.name]?.text?.let {
@@ -65,8 +66,8 @@ class XliffFileExporter(
     }
   }
 
-  private fun getResultItem(translation: ExportTranslationView): ResultItem {
-    val absolutePath = translation.getFilePath(translation.key.namespace)
+  private fun getResultItem(path: List<String>, translation: ExportTranslationView): ResultItem {
+    val absolutePath = translation.getFileAbsolutePath(path)
     return result[absolutePath] ?: let {
       val resultItem = createBaseDocumentStructure(translation)
       result[absolutePath] = resultItem
@@ -103,7 +104,26 @@ class XliffFileExporter(
     try {
       string.parseHtml().forEach { node ->
         node.parent = null
-        this.add(node)
+        val regex = "\\{[^\\{]+?\\}".toRegex()
+        if(regex.containsMatchIn(node.text)) {
+          var nodeTextToProcess = node.text
+          var paramSeqId = 0
+          regex.findAll(node.text).forEach { placeholder ->
+            val placeholderText = placeholder.value
+            this.addText(nodeTextToProcess.split(placeholderText).first())
+            this.addElement("x").addAttribute("id",
+              if (paramSeqId > 0)  "INTERPOLATION_$paramSeqId" else "INTERPOLATION")
+              .addAttribute("equiv-text", "{$placeholderText}")
+            nodeTextToProcess = nodeTextToProcess.split(placeholderText).last()
+            paramSeqId++
+          }
+          if(nodeTextToProcess.isNotEmpty()) {
+            this.addText(nodeTextToProcess)
+          }
+        }
+        else {
+          this.add(node)
+        }
       }
     } catch (e: DocumentException) {
       this.addText(string)

@@ -13,13 +13,13 @@ import { RedirectionActions } from 'tg.store/global/RedirectionActions';
 
 import { FullPageLoading } from '../common/FullPageLoading';
 import { useGlobalActions } from 'tg.globalContext/GlobalContext';
+import { TranslatedError } from 'tg.translationTools/TranslatedError';
 
 interface AcceptInvitationHandlerProps {}
 
 const globalActions = container.resolve(GlobalActions);
 const redirectActions = container.resolve(RedirectionActions);
 const messaging = container.resolve(MessageService);
-const invitationCodeService = container.resolve(InvitationCodeService);
 const tokenService = container.resolve(TokenService);
 
 const AcceptInvitationHandler: FunctionComponent<AcceptInvitationHandlerProps> =
@@ -36,20 +36,20 @@ const AcceptInvitationHandler: FunctionComponent<AcceptInvitationHandlerProps> =
 
     useEffect(() => {
       if (!tokenService.getToken()) {
-        invitationCodeService.setCode(code);
+        InvitationCodeService.setCode(code);
         globalActions.allowRegistration.dispatch();
         redirectActions.redirect.dispatch(LINKS.LOGIN.build());
-        messaging.success(<T>invitation_log_in_first</T>);
+        messaging.success(<T keyName="invitation_log_in_first" />);
       } else {
         acceptCode.mutate(
           { path: { code } },
           {
             onSuccess() {
               refetchInitialData();
-              messaging.success(<T>invitation_code_accepted</T>);
+              messaging.success(<T keyName="invitation_code_accepted" />);
             },
             onError(e) {
-              messaging.error(<T>{e.code}</T>);
+              messaging.error(<TranslatedError code={e.code} />);
             },
             onSettled() {
               redirectActions.redirect.dispatch(LINKS.PROJECTS.build());

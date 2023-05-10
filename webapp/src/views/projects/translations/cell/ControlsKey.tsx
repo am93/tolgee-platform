@@ -1,9 +1,15 @@
 import React from 'react';
-import { Edit, CameraAlt } from '@mui/icons-material';
 import { T } from '@tolgee/react';
+import { Edit, CameraAlt } from '@mui/icons-material';
+import { styled } from '@mui/material';
 
 import { CELL_SHOW_ON_HOVER } from './styles';
 import { ControlsButton } from './ControlsButton';
+
+const StyledControls = styled('div')`
+  display: flex;
+  gap: 12px;
+`;
 
 type ControlsProps = {
   editEnabled?: boolean;
@@ -27,13 +33,13 @@ export const ControlsKey: React.FC<ControlsProps> = ({
   const displayScreenshots = onScreenshots;
 
   return (
-    <>
+    <StyledControls>
       {displayEdit && (
         <ControlsButton
           onClick={onEdit}
           data-cy="translations-cell-edit-button"
           className={CELL_SHOW_ON_HOVER}
-          tooltip={<T>translations_cell_edit</T>}
+          tooltip={<T keyName="translations_cell_edit" />}
         >
           <Edit fontSize="small" />
         </ControlsButton>
@@ -42,7 +48,7 @@ export const ControlsKey: React.FC<ControlsProps> = ({
         <ControlsButton
           onClick={onScreenshots}
           ref={screenshotRef}
-          tooltip={<T>translations_screenshots_tooltip</T>}
+          tooltip={<T keyName="translations_screenshots_tooltip" />}
           data-cy="translations-cell-screenshots-button"
           className={
             screenshotsPresent || screenshotsOpen
@@ -56,6 +62,6 @@ export const ControlsKey: React.FC<ControlsProps> = ({
           />
         </ControlsButton>
       )}
-    </>
+    </StyledControls>
   );
 };

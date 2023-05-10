@@ -83,7 +83,7 @@ context('Sign up', () => {
       fillAndSubmitForm();
       cy.wait(['@signUp']);
       cy.contains(
-        'Thank you for signing up. To verify your e-mail please follow instructions sent to provided e-mail address.'
+        'Thank you for signing up. To verify your email please follow instructions sent to provided email address.'
       ).should('be.visible');
       setProperty('recaptcha.siteKey', recaptchaSiteKey);
     });
@@ -107,7 +107,7 @@ context('Sign up', () => {
     fillAndSubmitForm();
     cy.wait(['@signUp']);
     cy.contains(
-      'Thank you for signing up. To verify your e-mail please follow instructions sent to provided e-mail address.'
+      'Thank you for signing up. To verify your email please follow instructions sent to provided email address.'
     ).should('be.visible');
     getUser(TEST_USERNAME).then((u) => {
       expect(u[0]).be.equal(TEST_USERNAME);
@@ -117,14 +117,14 @@ context('Sign up', () => {
       cy.wrap(r.fromAddress).should('contain', 'no-reply@tolgee.io');
       cy.wrap(r.toAddress).should('contain', TEST_USERNAME);
       cy.visit(r.verifyEmailLink);
-      assertMessage('E-mail was verified');
+      assertMessage('Email was verified');
     });
   });
 
   it('Signs up without email verification', () => {
     disableEmailVerification();
     fillAndSubmitForm();
-    assertMessage('Thanks for your sign up!');
+    assertMessage('Thank you for signing up!');
     cy.contains('Projects');
   });
 
@@ -148,7 +148,7 @@ context('Sign up', () => {
       assertMessage('Log in or sign up first please');
       cy.visit(HOST + '/sign_up');
       fillAndSubmitForm(false);
-      assertMessage('Thanks for your sign up!');
+      assertMessage('Thank you for signing up!');
       cy.contains('Crazy project').should('be.visible');
     });
   });
@@ -161,7 +161,7 @@ context('Sign up', () => {
       assertMessage('Log in or sign up first please');
       cy.visit(HOST + '/sign_up');
       fillAndSubmitForm(false);
-      assertMessage('Thanks for your sign up!');
+      assertMessage('Thank you for signing up!');
       cy.contains('Crazy project').should('be.visible');
     });
   });

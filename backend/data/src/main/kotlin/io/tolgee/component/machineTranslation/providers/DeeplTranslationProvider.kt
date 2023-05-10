@@ -38,9 +38,12 @@ class DeeplTranslationProvider(
     "fr",
     "hu",
     "it",
+    "id",
     "ja",
+    "ko",
     "lt",
     "lv",
+    "nb",
     "nl",
     "pl",
     "pt",
@@ -51,6 +54,8 @@ class DeeplTranslationProvider(
     "sk",
     "sl",
     "sv",
+    "tr",
+    "uk",
     "zh"
   )
 }

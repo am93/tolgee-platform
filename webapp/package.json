@@ -13,11 +13,10 @@
     "@mui/lab": "^5.0.0-alpha.75",
     "@mui/material": "^5.5.3",
     "@mui/x-date-pickers": "5.0.0-beta.6",
-    "@openreplay/tracker": "^3.5.4",
-    "@sentry/browser": "^6.10.0",
+    "@sentry/browser": "^7.49.0",
     "@stomp/stompjs": "^6.1.2",
-    "@tolgee/format-icu": "^5.0.0",
-    "@tolgee/react": "^5.2.0",
+    "@tolgee/format-icu": "^5.6.0",
+    "@tolgee/react": "^5.7.0",
     "clsx": "^1.1.1",
     "codemirror": "^5.62.0",
     "copy-to-clipboard": "^3.3.1",
@@ -68,7 +67,9 @@
     "prettier": "prettier --write ./src",
     "eslint": "eslint --ext .ts --ext .tsx --max-warnings 0 --report-unused-disable-directives .",
     "tsc": "tsc",
-    "load-translations": "sh scripts/loadTranslations.sh"
+    "tsc:prod": "tsc --project tsconfig.prod.json",
+    "load-translations": "tolgee pull ./src/i18n -o",
+    "check-translations": "tolgee extract check './src/**/*.ts?(x)'"
   },
   "eslintConfig": {
     "extends": [
@@ -97,6 +98,7 @@
     "@testing-library/react": "^12.0.0",
     "@testing-library/user-event": "^13.2.1",
     "@tginternal/language-util": "^1.0.6",
+    "@tolgee/cli": "^1.0.1",
     "@types/ace": "^0.0.47",
     "@types/codemirror": "^5.60.2",
     "@types/diff": "^5.0.2",

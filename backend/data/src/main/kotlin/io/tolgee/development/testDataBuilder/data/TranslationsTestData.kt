@@ -1,16 +1,18 @@
 package io.tolgee.development.testDataBuilder.data
 
 import io.tolgee.constants.MtServiceType
+import io.tolgee.development.testDataBuilder.builders.KeyBuilder
 import io.tolgee.development.testDataBuilder.builders.ProjectBuilder
 import io.tolgee.development.testDataBuilder.builders.TestDataBuilder
 import io.tolgee.model.Language
 import io.tolgee.model.Permission
 import io.tolgee.model.Project
+import io.tolgee.model.Screenshot
 import io.tolgee.model.UserAccount
 import io.tolgee.model.enums.TranslationCommentState
 import io.tolgee.model.enums.TranslationState
 import io.tolgee.model.key.Key
-import io.tolgee.model.key.Tag
+import io.tolgee.model.key.screenshotReference.KeyInScreenshotPosition
 import io.tolgee.model.translation.Translation
 
 class TranslationsTestData {
@@ -57,21 +59,15 @@ class TranslationsTestData {
           text = "Z translation"
           state = TranslationState.REVIEWED
           auto = true
+          outdated = true
           mtProvider = MtServiceType.GOOGLE
           aKeyGermanTranslation = this
         }.build {
-          addMeta {
-            tags.add(
-              Tag().apply {
-                this.project = this@project.self
-                name = "Cool tag"
-              }
-            )
-          }
           addComment {
             text = "Comment"
           }
         }
+        addTag("Cool tag")
       }
 
       val zKeyBuilder = addKey {
@@ -84,16 +80,7 @@ class TranslationsTestData {
           text = "A translation"
           auto = true
         }.build {
-          addMeta {
-            self {
-              tags.add(
-                Tag().apply {
-                  this.project = this@project.self
-                  name = "Lame tag"
-                }
-              )
-            }
-          }
+          addTag("Lame tag")
         }
       }
       projectBuilder = this
@@ -165,18 +152,34 @@ class TranslationsTestData {
     }
   }
 
+  fun addSentenceKey(): KeyBuilder {
+    return projectBuilder.addKey {
+      name = "How strong of a variation to produce. At 0, " +
+        "there will be no effect. At 1, you will get the " +
+        "complete picture with variation seed (except for ancestral " +
+        "samplers, where you will just get something)."
+    }
+  }
+
   fun addKeysWithScreenshots() {
+    var screenshot1: Screenshot? = null
+
     projectBuilder.addKey {
       name = "key with screenshot"
     }.build {
-      addScreenshot {}
+      screenshot1 = addScreenshot {}.self
       addScreenshot {}
     }
     projectBuilder.addKey {
       name = "key with screenshot 2"
     }.build {
       addScreenshot {}
-      addScreenshot {}
+      projectBuilder.addScreenshotReference {
+        screenshot = screenshot1!!
+        key = this@build.self
+        originalText = "Oh yeah"
+        positions = mutableListOf(KeyInScreenshotPosition(100, 100, 50, 50))
+      }
     }
   }
 
@@ -203,38 +206,17 @@ class TranslationsTestData {
       addKey {
         name = "Key with tag"
       }.build {
-        addMeta {
-          tags.add(
-            Tag().apply {
-              name = "Cool tag"
-              project = root.data.projects[0].self
-            }
-          )
-        }
+        addTag("Cool tag")
       }
       addKey {
         name = "Another key with tag"
       }.build {
-        addMeta {
-          tags.add(
-            Tag().apply {
-              name = "Another cool tag"
-              project = root.data.projects[0].self
-            }
-          )
-        }
+        addTag("Another cool tag")
       }
       addKey {
         name = "Key with tag 2"
       }.build {
-        addMeta {
-          tags.add(
-            Tag().apply {
-              name = "Cool tag"
-              project = root.data.projects[0].self
-            }
-          )
-        }
+        addTag("Cool tag")
       }
     }
   }

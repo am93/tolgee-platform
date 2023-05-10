@@ -1,7 +1,9 @@
 import { useMemo, useRef } from 'react';
-import { useTranslate, TFnType } from '@tolgee/react';
 import CodeMirror from 'codemirror';
-import { Controlled as CodeMirrorReact } from 'react-codemirror2-react-17';
+import {
+  Controlled as CodeMirrorReact,
+  DomEvent,
+} from 'react-codemirror2-react-17';
 import { parse } from '@formatjs/icu-messageformat-parser';
 import { GlobalStyles, styled } from '@mui/material';
 import 'codemirror/keymap/sublime';
@@ -12,6 +14,7 @@ import 'codemirror/addon/lint/lint.css';
 import icuMode from './icuMode';
 import { useScrollMargins } from 'tg.hooks/useScrollMargins';
 import { Direction } from 'tg.fixtures/getLanguageDirection';
+import { useParserErrorTranslation } from 'tg.translationTools/useParserErrorTranslation';
 
 const StyledWrapper = styled('div')<{
   minheight: string | number;
@@ -102,7 +105,9 @@ const StyledWrapper = styled('div')<{
 
 function linter(text: string, data: any) {
   const errors = data.errors;
-  const t = data.t as TFnType;
+  const translateParserError = data.translateParserError as ReturnType<
+    typeof useParserErrorTranslation
+  >;
   return errors?.map((error) => {
     const location = error.location;
     const start = location?.start;
@@ -112,7 +117,7 @@ function linter(text: string, data: any) {
     const endColumn =
       start?.column === start?.column ? end?.column : end?.column - 1;
     const hint = {
-      message: t(`parser_${error.message?.toLowerCase()}`, { noWrap: true }),
+      message: translateParserError(error.message?.toLowerCase()),
       severity: 'error',
       type: 'validation',
       from: CodeMirror.Pos(start.line - 1, startColumn),
@@ -128,6 +133,7 @@ type Props = {
   value: string;
   onChange?: (val: string) => void;
   onSave?: (val: string) => void;
+  onInsertBase?: (val?: string) => void;
   onCancel?: () => void;
   background?: string;
   plaintext?: boolean;
@@ -139,6 +145,7 @@ type Props = {
   scrollMargins?: Parameters<typeof useScrollMargins>[0];
   autoScrollIntoView?: boolean;
   direction?: Direction;
+  onKeyDown?: DomEvent;
 };
 
 export const Editor: React.FC<Props> = ({
@@ -156,9 +163,10 @@ export const Editor: React.FC<Props> = ({
   scrollMargins,
   autoScrollIntoView,
   direction = 'ltr',
+  onKeyDown,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const { t } = useTranslate();
+  const translateParserError = useParserErrorTranslation();
 
   const handleChange = (val: string) => {
     onChange?.(val);
@@ -166,7 +174,7 @@ export const Editor: React.FC<Props> = ({
 
   const error = useMemo(() => {
     try {
-      parse(value, { captureLocation: true });
+      parse(value, { captureLocation: true, ignoreTag: true });
     } catch (e) {
       return e;
     }
@@ -191,7 +199,7 @@ export const Editor: React.FC<Props> = ({
     lint: {
       // @ts-ignore
       errors: error ? [error] : [],
-      t,
+      translateParserError,
     },
     inputStyle: 'contenteditable',
     spellcheck: !plaintext,
@@ -231,6 +239,7 @@ export const Editor: React.FC<Props> = ({
           onBeforeChange={(editor, data, value) => {
             handleChange(value);
           }}
+          onKeyDown={(...params) => onKeyDown?.(...params)}
           onBlur={() => onBlur?.()}
           onFocus={(e) => {
             onFocus?.();

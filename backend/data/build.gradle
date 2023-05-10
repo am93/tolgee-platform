@@ -55,8 +55,6 @@ repositories {
     jcenter()
 }
 
-sourceCompatibility = 11
-
 idea {
     module {
         generatedSourceDirs += files('build/generated/source/kapt/main', 'build/generated/source/kaptKotlin/main')
@@ -67,7 +65,7 @@ hibernate {
     enhance {
         enableLazyInitialization = true
         enableDirtyTracking = true
-        enableAssociationManagement = true
+        enableAssociationManagement = false
         enableExtendedEnhancement = false
     }
 }
@@ -89,9 +87,8 @@ configureLiquibase("public", "hibernate:spring:io.tolgee", 'src/main/resources/d
 diff.dependsOn compileKotlin
 diffChangeLog.dependsOn compileKotlin
 
-compileKotlin {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+kotlin {
+    jvmToolchain(11)
 }
 
 dependencies {
@@ -203,3 +200,7 @@ sourceSets {
 
 tasks.findByName("jar").enabled(true)
 tasks.findByName("bootJar").enabled(false)
+
+jar {
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}

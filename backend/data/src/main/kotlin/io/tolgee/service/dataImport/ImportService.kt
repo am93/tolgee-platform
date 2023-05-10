@@ -27,6 +27,7 @@ import io.tolgee.repository.dataImport.ImportTranslationRepository
 import io.tolgee.repository.dataImport.issues.ImportFileIssueParamRepository
 import io.tolgee.repository.dataImport.issues.ImportFileIssueRepository
 import io.tolgee.service.key.KeyMetaService
+import io.tolgee.util.getSafeNamespace
 import org.hibernate.annotations.QueryHints
 import org.springframework.context.ApplicationContext
 import org.springframework.data.domain.Page
@@ -123,8 +124,6 @@ class ImportService(
       dataManager.resetLanguage(it)
     }
   }
-
-  private fun getSafeNamespace(name: String?) = if (name.isNullOrBlank()) null else name
 
   fun save(import: Import): Import {
     return this.importRepository.save(import)
@@ -245,8 +244,14 @@ class ImportService(
   }
 
   fun deleteImport(import: Import) {
+    this.importTranslationRepository.deleteAllByImport(import)
+    this.importLanguageRepository.deleteAllByImport(import)
     val keyIds = this.importKeyRepository.getAllIdsByImport(import)
     this.keyMetaService.deleteAllByImportKeyIdIn(keyIds)
+    this.importKeyRepository.deleteByIdIn(keyIds)
+    this.importFileIssueParamRepository.deleteAllByImport(import)
+    this.importFileIssueRepository.deleteAllByImport(import)
+    this.importFileRepository.deleteAllByImport(import)
     this.importRepository.delete(import)
   }
 
@@ -257,6 +262,7 @@ class ImportService(
   @Transactional
   fun deleteLanguage(language: ImportLanguage) {
     val import = language.file.import
+    this.importTranslationRepository.deleteAllByLanguage(language)
     this.importLanguageRepository.delete(language)
     if (this.findLanguages(import = language.file.import).isEmpty()) {
       deleteImport(import)

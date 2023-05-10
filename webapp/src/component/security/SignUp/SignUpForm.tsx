@@ -1,17 +1,16 @@
-import { useSelector } from 'react-redux';
-import { container } from 'tsyringe';
-import { Box, Typography, Link } from '@mui/material';
+import { Box, Link, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { T, useTranslate } from '@tolgee/react';
 
-import { StandardForm } from 'tg.component/common/form/StandardForm';
+import {
+  LoadableType,
+  StandardForm,
+} from 'tg.component/common/form/StandardForm';
 import { TextField } from 'tg.component/common/form/fields/TextField';
 import { InvitationCodeService } from 'tg.service/InvitationCodeService';
-import { AppState } from 'tg.store/index';
 import { Validation } from 'tg.constants/GlobalValidationSchema';
 import { SetPasswordFields } from '../SetPasswordFields';
-
-const invitationService = container.resolve(InvitationCodeService);
+import { useConfig } from 'tg.globalContext/helpers';
 
 export type SignUpType = {
   name: string;
@@ -24,17 +23,19 @@ export type SignUpType = {
 
 type Props = {
   onSubmit: (v) => void;
+  loadable: LoadableType;
 };
 
 export const SignUpForm = (props: Props) => {
-  const orgRequired = !invitationService.getCode();
-  const state = useSelector((state: AppState) => state.signUp.loadables.signUp);
+  const config = useConfig();
+  const orgRequired =
+    !InvitationCodeService.getCode() && config.userCanCreateOrganizations;
   const { t } = useTranslate();
 
   return (
     <StandardForm
       rootSx={{ mb: 1 }}
-      saveActionLoadable={state}
+      saveActionLoadable={props.loadable}
       initialValues={
         {
           password: '',
@@ -52,9 +53,9 @@ export const SignUpForm = (props: Props) => {
             color="primary"
             type="submit"
             variant="contained"
-            loading={state.loading}
+            loading={props.loadable.loading}
           >
-            <T>sign_up_submit_button</T>
+            <T keyName="sign_up_submit_button" />
           </LoadingButton>
         </Box>
       }
@@ -62,18 +63,18 @@ export const SignUpForm = (props: Props) => {
     >
       <TextField
         name="name"
-        label={<T>sign_up_form_full_name</T>}
+        label={<T keyName="sign_up_form_full_name" />}
         variant="standard"
       />
       <TextField
         name="email"
-        label={<T>sign_up_form_email</T>}
+        label={<T keyName="sign_up_form_email" />}
         variant="standard"
       />
       {orgRequired && (
         <TextField
           name="organizationName"
-          label={<T>sign_up_form_organization_name</T>}
+          label={<T keyName="sign_up_form_organization_name" />}
           variant="standard"
         />
       )}
@@ -81,16 +82,10 @@ export const SignUpForm = (props: Props) => {
       <Box mt={2} mb={3}>
         <Typography variant="body2">
           <T
-            params={{
-              Link(content) {
-                return (
-                  <Link href="https://tolgee.io/docs/terms_of_use">
-                    {content}
-                  </Link>
-                );
-              },
-            }}
             keyName="sign-up-terms-and-conditions-message"
+            params={{
+              Link: <Link href="https://tolgee.io/docs/terms_of_use" />,
+            }}
           />
         </Typography>
       </Box>

@@ -67,7 +67,7 @@ export const ApiKeySelector: FC<{
             }}
             renderValue={(id) => {
               return (
-                <span data-openreplay-masked="">
+                <span data-sentry-mask="">
                   {findKey(id as number)?.description}
                 </span>
               );
@@ -81,7 +81,7 @@ export const ApiKeySelector: FC<{
                 data-cy="integrate-api-key-selector-item"
               >
                 <StyledItemWrapper>
-                  <Box data-openreplay-masked="">{k.description}</Box>
+                  <Box data-sentry-mask="">{k.description}</Box>
                   <StyledScopes>{k.scopes.join(', ')}</StyledScopes>
                 </StyledItemWrapper>
               </MenuItem>
@@ -91,7 +91,7 @@ export const ApiKeySelector: FC<{
               data-cy="integrate-api-key-selector-create-new-item"
             >
               <StyledItemWrapper className="addItem">
-                <T>api_key_selector_create_new</T>
+                <T keyName="api_key_selector_create_new" />
                 <StyledAddIcon fontSize="small" />
               </StyledItemWrapper>
             </MenuItem>

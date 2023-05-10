@@ -1,51 +1,54 @@
 import { useConfig, useUser } from 'tg.globalContext/helpers';
 import { useGlobalContext } from 'tg.globalContext/GlobalContext';
-import { useEffect, useState } from 'react';
-import API from '@openreplay/tracker';
+import { useEffect } from 'react';
 import * as Sentry from '@sentry/browser';
 import { useGlobalLoading } from './GlobalLoading';
+import { getCurrentHub } from '@sentry/browser';
 
+const SENTRY_INITIALIZED_WINDOW_PROPERTY = 'sentryInitialized';
 export const MandatoryDataProvider = (props: any) => {
   const config = useConfig();
   const userData = useUser();
   const isLoading = useGlobalContext((v) => v.isLoading);
   const isFetching = useGlobalContext((v) => v.isFetching);
-  const [openReplayTracker, setOpenReplayTracker] = useState(
-    undefined as undefined | API
-  );
 
   useEffect(() => {
     if (config?.clientSentryDsn) {
-      Sentry.init({ dsn: config.clientSentryDsn });
+      Sentry.init({
+        dsn: config.clientSentryDsn,
+        replaysSessionSampleRate: 1.0,
+        replaysOnErrorSampleRate: 1.0,
+      });
       // eslint-disable-next-line no-console
       console.info('Using Sentry!');
     }
   }, [config?.clientSentryDsn]);
 
-  useEffect(() => {
-    const openReplayApiKey = config?.openReplayApiKey;
-    if (openReplayApiKey && !window.openReplayTracker) {
-      import('@openreplay/tracker').then(({ default: Tracker }) => {
-        window.openReplayTracker = new Tracker({
-          projectKey: openReplayApiKey,
-          __DISABLE_SECURE_MODE:
-            process.env.NODE_ENV === 'development' ? true : undefined,
-        });
-        setOpenReplayTracker(window.openReplayTracker);
-        window.openReplayTracker.start();
+  async function initReplay() {
+    const { Replay } = await import('@sentry/browser');
+    if (!window[SENTRY_INITIALIZED_WINDOW_PROPERTY]) {
+      getCurrentHub()
+        .getClient()
+        ?.addIntegration?.(
+          new Replay({
+            maskAllText: false,
+            maskAllInputs: false,
+          })
+        );
+      window[SENTRY_INITIALIZED_WINDOW_PROPERTY] = true;
+      Sentry.setUser({
+        email: userData!.username,
+        id: userData!.id.toString(),
       });
     }
-    setOpenReplayTracker(window.openReplayTracker);
-  }, [config?.clientSentryDsn, config?.openReplayApiKey]);
+  }
 
   useEffect(() => {
-    if (userData && openReplayTracker) {
-      openReplayTracker.setUserID(userData.username);
-      setTimeout(() => {
-        openReplayTracker?.setUserID(userData.username);
-      }, 2000);
+    if (userData?.id && config?.clientSentryDsn) {
+      // noinspection JSIgnoredPromiseFromCall
+      initReplay();
     }
-  }, [userData, openReplayTracker]);
+  }, [userData?.id, config?.clientSentryDsn]);
 
   useGlobalLoading(isFetching || isLoading);
 

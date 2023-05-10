@@ -7,11 +7,7 @@ import io.tolgee.component.machineTranslation.MtServiceManager
 import io.tolgee.configuration.tolgee.AuthenticationProperties
 import io.tolgee.configuration.tolgee.InternalProperties
 import io.tolgee.configuration.tolgee.TolgeeProperties
-import io.tolgee.configuration.tolgee.machineTranslation.AwsMachineTranslationProperties
-import io.tolgee.configuration.tolgee.machineTranslation.AzureCognitiveTranslationProperties
-import io.tolgee.configuration.tolgee.machineTranslation.DeeplMachineTranslationProperties
-import io.tolgee.configuration.tolgee.machineTranslation.GoogleMachineTranslationProperties
-import io.tolgee.configuration.tolgee.machineTranslation.MachineTranslationProperties
+import io.tolgee.configuration.tolgee.machineTranslation.*
 import io.tolgee.development.DbPopulatorReal
 import io.tolgee.development.testDataBuilder.TestDataService
 import io.tolgee.repository.EmailVerificationRepository
@@ -50,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.TransactionTemplate
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -150,6 +147,9 @@ abstract class AbstractSpringTest : AbstractTransactionalTest() {
   lateinit var azureCognitiveTranslationProperties: AzureCognitiveTranslationProperties
 
   @Autowired
+  lateinit var baiduMachineTranslationProperties: BaiduMachineTranslationProperties
+
+  @Autowired
   lateinit var internalProperties: InternalProperties
 
   @Autowired
@@ -214,10 +214,17 @@ abstract class AbstractSpringTest : AbstractTransactionalTest() {
     deeplMachineTranslationProperties.authKey = "dummy"
     azureCognitiveTranslationProperties.defaultEnabled = false
     azureCognitiveTranslationProperties.authKey = "dummy"
+    baiduMachineTranslationProperties.defaultEnabled = false
+    baiduMachineTranslationProperties.appId = "dummy"
+    baiduMachineTranslationProperties.appSecret = "dummy"
     internalProperties.fakeMtProviders = false
   }
 
   fun <T> executeInNewTransaction(fn: () -> T): T {
-    return io.tolgee.util.executeInNewTransaction(platformTransactionManager, fn)
+    return io.tolgee.util.executeInNewTransaction(
+      platformTransactionManager,
+      TransactionDefinition.ISOLATION_DEFAULT,
+      fn
+    )
   }
 }

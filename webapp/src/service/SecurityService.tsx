@@ -9,6 +9,7 @@ import { TokenService } from './TokenService';
 import { ApiSchemaHttpService } from './http/ApiSchemaHttpService';
 import { ApiV1HttpService } from './http/ApiV1HttpService';
 import { ErrorResponseDto, TokenDTO } from './response.types';
+import { TranslatedError } from 'tg.translationTools/TranslatedError';
 
 const API_URL = process.env.REACT_APP_API_URL + '/api/';
 
@@ -24,7 +25,6 @@ export class SecurityService {
     private http: ApiV1HttpService,
     private tokenService: TokenService,
     private messageService: MessageService,
-    private invitationCodeService: InvitationCodeService,
     private apiSchemaService: ApiSchemaHttpService
   ) {}
 
@@ -32,7 +32,7 @@ export class SecurityService {
     type: string,
     code: string
   ): Promise<TokenDTO> => {
-    const invitationCode = this.invitationCodeService.getCode();
+    const invitationCode = InvitationCodeService.getCode();
     const invitationCodeQueryPart = invitationCode
       ? '&invitationCode=' + invitationCode
       : '';
@@ -42,7 +42,7 @@ export class SecurityService {
     const response = await fetch(
       `${API_URL}public/authorize_oauth/${type}?code=${code}&redirect_uri=${redirectUri}${invitationCodeQueryPart}`
     );
-    this.invitationCodeService.disposeCode();
+    InvitationCodeService.disposeCode();
     return this.handleLoginResponse(response);
   };
 
@@ -94,7 +94,7 @@ export class SecurityService {
       code,
       password,
     } as ResetPasswordPostRequest);
-    this.messageService.success(<T>Password successfully reset</T>);
+    this.messageService.success(<T keyName="password_reset_message" />);
     return res;
   };
 
@@ -138,7 +138,7 @@ export class SecurityService {
 
     this.tokenService.setToken(tokenDTO.accessToken);
 
-    const code = this.invitationCodeService.getCode();
+    const code = InvitationCodeService.getCode();
     if (code) {
       try {
         await this.apiSchemaService.schemaRequest(
@@ -147,12 +147,12 @@ export class SecurityService {
         )({ path: { code } });
       } catch (e) {
         if (e.code === 'invitation_code_does_not_exist_or_expired') {
-          this.messageService.error(<T>{e.code}</T>);
+          this.messageService.error(<TranslatedError code={e.code} />);
         } else {
           throw e;
         }
       }
-      this.invitationCodeService.disposeCode();
+      InvitationCodeService.disposeCode();
     }
     return tokenDTO;
   }

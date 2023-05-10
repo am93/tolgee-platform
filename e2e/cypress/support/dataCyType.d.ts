@@ -258,8 +258,6 @@ declare namespace DataCy {
         "project-member-revoke-button" |
         "project-menu-items" |
         "project-name-field" |
-        "project-owner-select" |
-        "project-owner-select-item" |
         "project-settings" |
         "project-settings-button" |
         "project-settings-delete-button" |
@@ -280,7 +278,8 @@ declare namespace DataCy {
         "project-transfer-dialog" |
         "regenerate-pat-dialog-content" |
         "regenerate-pat-dialog-title" |
-        "screenshot-box" |
+        "screenshot-image" |
+        "screenshot-thumbnail" |
         "search-select" |
         "search-select-item" |
         "search-select-new" |
@@ -311,6 +310,7 @@ declare namespace DataCy {
         "translations-cell-close" |
         "translations-cell-comments-button" |
         "translations-cell-edit-button" |
+        "translations-cell-insert-base-button" |
         "translations-cell-save-button" |
         "translations-cell-screenshots-button" |
         "translations-cell-tab-comments" |
@@ -328,6 +328,8 @@ declare namespace DataCy {
         "translations-language-select-form-control" |
         "translations-language-select-item" |
         "translations-namespace-banner" |
+        "translations-outdated-clear-button" |
+        "translations-outdated-indicator" |
         "translations-row" |
         "translations-row-checkbox" |
         "translations-select-all-button" |

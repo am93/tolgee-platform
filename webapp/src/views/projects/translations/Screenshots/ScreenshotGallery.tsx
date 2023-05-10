@@ -25,6 +25,7 @@ import { ScreenshotThumbnail } from './ScreenshotThumbnail';
 import { useTranslationsActions } from '../context/TranslationsContext';
 import { useGlobalLoading } from 'tg.component/GlobalLoading';
 import { useCurrentLanguage } from 'tg.hooks/useCurrentLanguage';
+import { ScreenshotProps } from 'tg.component/ScreenshotWithLabels';
 
 export interface ScreenshotGalleryProps {
   keyId: number;
@@ -90,8 +91,9 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = (props) => {
     method: 'post',
   });
 
-  const [detailFileName, setDetailFileName] = useState(null as string | null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  const [detailData, setDetailData] = useState<ScreenshotProps>();
 
   const deleteLoadable = useApiMutation({
     url: '/v2/projects/{projectId}/keys/{keyId}/screenshots/{ids}',
@@ -102,10 +104,10 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = (props) => {
     ProjectPermissionType.EDIT
   );
 
-  const onDelete = (id: number) => {
+  const handleDelete = (id: number) => () => {
     deleteLoadable.mutate(
       {
-        path: { projectId: project.id, ids: [id] },
+        path: { projectId: project.id, ids: [id], keyId: props.keyId },
       },
       {
         onSuccess() {
@@ -134,23 +136,25 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = (props) => {
 
     if (files.length > MAX_FILE_COUNT) {
       result.errors.push(
-        <T>translations.screenshots.validation.too_many_files</T>
+        <T keyName="translations.screenshots.validation.too_many_files" />
       );
     }
 
     files.forEach((file) => {
       if (file.size > config.maxUploadFileSize * 1024) {
         result.errors.push(
-          <T params={{ filename: file.name }}>
-            translations.screenshots.validation.file_too_big
-          </T>
+          <T
+            keyName="translations.screenshots.validation.file_too_big"
+            params={{ filename: file.name }}
+          />
         );
       }
       if (ALLOWED_UPLOAD_TYPES.indexOf(file.type) < 0) {
         result.errors.push(
-          <T params={{ filename: file.name }}>
-            translations.screenshots.validation.unsupported_format
-          </T>
+          <T
+            keyName="translations.screenshots.validation.unsupported_format"
+            params={{ filename: file.name }}
+          />
         );
       }
     });
@@ -184,7 +188,7 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = (props) => {
 
       if (errorHappened) {
         messageService.error(
-          <T>translations.screenshots.some_screenshots_not_uploaded</T>
+          <T keyName="translations.screenshots.some_screenshots_not_uploaded" />
         );
       }
       screenshotsLoadable.refetch();
@@ -270,17 +274,29 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = (props) => {
         ) : Number(screenshotsLoadable.data?._embedded?.screenshots?.length) >
             0 || uploadLoadable.isLoading ? (
           <Box display="flex" flexWrap="wrap" overflow="visible">
-            {screenshotsLoadable.data?._embedded?.screenshots?.map((s) => (
-              <ScreenshotThumbnail
-                key={s.id}
-                onClick={() => {
-                  setDetailFileName(s.filename);
-                  setDetailOpen(true);
-                }}
-                screenshotData={s}
-                onDelete={onDelete}
-              />
-            ))}
+            {screenshotsLoadable.data?._embedded?.screenshots?.map((s) => {
+              const screenshot: ScreenshotProps = {
+                src: config.screenshotsUrl + '/' + s.thumbnail,
+                width: s.width!,
+                height: s.height!,
+                highlightedKeyId: props.keyId,
+                keyReferences: s.keyReferences,
+              };
+              return (
+                <ScreenshotThumbnail
+                  key={s.id}
+                  onClick={() => {
+                    setDetailOpen(true);
+                    setDetailData({
+                      ...screenshot,
+                      src: config.screenshotsUrl + '/' + s.filename,
+                    });
+                  }}
+                  screenshot={screenshot}
+                  onDelete={handleDelete(s.id)}
+                />
+              );
+            })}
             {loadingSkeleton}
             {addBox}
           </Box>
@@ -302,9 +318,10 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = (props) => {
         )}
       </ScreenshotDropzone>
       <ScreenshotDetail
-        fileName={detailFileName as string}
         open={detailOpen}
+        screenshot={detailData}
         onClose={() => setDetailOpen(false)}
+        highlightedKeyId={props.keyId}
       />
     </>
   );

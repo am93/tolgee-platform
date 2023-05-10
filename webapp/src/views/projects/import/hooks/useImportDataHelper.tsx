@@ -75,9 +75,10 @@ export const useImportDataHelper = () => {
       onError(error) {
         if (error?.code === 'cannot_add_more_then_100_languages') {
           message.error(
-            <T params={{ n: '100' }}>
-              import_error_cannot_add_more_then_n_languages
-            </T>
+            <T
+              keyName="import_error_cannot_add_more_then_n_languages"
+              params={{ n: '100' }}
+            />
           );
         }
       },
@@ -107,6 +108,7 @@ export const useImportDataHelper = () => {
       path: {
         projectId: project.id,
       },
+      query: {},
       content: {
         'multipart/form-data': {
           files: files as any,

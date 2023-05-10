@@ -1,7 +1,7 @@
 import React from 'react';
 import { T } from '@tolgee/react';
 import { Button, styled } from '@mui/material';
-import { CameraAlt } from '@mui/icons-material';
+import { CameraAlt, ContentCopy } from '@mui/icons-material';
 
 import LoadingButton from 'tg.component/common/form/LoadingButton';
 import { components } from 'tg.service/apiSchema.generated';
@@ -24,12 +24,24 @@ const StyledRightPart = styled('div')`
   display: flex;
   align-items: center;
   padding: ${({ theme }) => theme.spacing(1, 1.5, 1.5, 0)};
+  gap: 8px;
+`;
+
+const StyledRightestPart = styled('div')`
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 5px;
+  padding: ${({ theme }) => theme.spacing(1, 1.5, 1.5, 0)};
+  gap: 8px;
 `;
 
 type ControlsProps = {
   state?: State;
+  isBaseLanguage?: boolean;
   onSave?: () => void;
   onCancel?: () => void;
+  onInsertBase?: () => void;
   onScreenshots?: () => void;
   onStateChange?: (state: StateType) => void;
   screenshotRef?: React.Ref<any>;
@@ -38,8 +50,10 @@ type ControlsProps = {
 
 export const ControlsEditor: React.FC<ControlsProps> = ({
   state,
+  isBaseLanguage,
   onSave,
   onCancel,
+  onInsertBase,
   onScreenshots,
   onStateChange,
   screenshotRef,
@@ -49,6 +63,7 @@ export const ControlsEditor: React.FC<ControlsProps> = ({
   const displayTransitionButtons = state;
   const displayScreenshots = onScreenshots;
   const displayRightPart = displayTransitionButtons || displayScreenshots;
+  const displayInsertBase = !isBaseLanguage;
 
   const isEditLoading = useTranslationsSelector((c) => c.isEditLoading);
 
@@ -62,7 +77,7 @@ export const ControlsEditor: React.FC<ControlsProps> = ({
           size="small"
           data-cy="translations-cell-cancel-button"
         >
-          <T>translations_cell_cancel</T>
+          <T keyName="translations_cell_cancel" />
         </Button>
         <LoadingButton
           onClick={onSave}
@@ -72,7 +87,7 @@ export const ControlsEditor: React.FC<ControlsProps> = ({
           loading={isEditLoading}
           data-cy="translations-cell-save-button"
         >
-          <T>translations_cell_save</T>
+          <T keyName="translations_cell_save" />
         </LoadingButton>
       </StyledLeftPart>
 
@@ -88,7 +103,7 @@ export const ControlsEditor: React.FC<ControlsProps> = ({
             <ControlsButton
               onClick={onScreenshots}
               ref={screenshotRef}
-              tooltip={<T>translations_screenshots_tooltip</T>}
+              tooltip={<T keyName="translations_screenshots_tooltip" />}
               data-cy="translations-cell-screenshots-button"
             >
               <CameraAlt
@@ -98,6 +113,22 @@ export const ControlsEditor: React.FC<ControlsProps> = ({
             </ControlsButton>
           )}
         </StyledRightPart>
+      )}
+
+      {displayInsertBase && (
+        <StyledRightestPart>
+          <ControlsButton
+            onClick={onInsertBase}
+            onMouseDown={(e) => {
+              e.preventDefault();
+            }}
+            color="default"
+            data-cy="translations-cell-insert-base-button"
+            tooltip={<T keyName="translations_cell_insert_base" />}
+          >
+            <ContentCopy fontSize="small" />
+          </ControlsButton>
+        </StyledRightestPart>
       )}
     </>
   );

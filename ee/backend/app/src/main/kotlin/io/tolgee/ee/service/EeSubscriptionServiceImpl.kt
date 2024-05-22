@@ -257,7 +257,7 @@ class EeSubscriptionServiceImpl(
     }
     val isCloud = billingConfProvider.invoke().enabled
     if (subscription == null && !isCloud) {
-      if (seats > 10) {
+      if (seats > 100) {
         throw BadRequestException(Message.FREE_SELF_HOSTED_SEAT_LIMIT_EXCEEDED)
       }
     }

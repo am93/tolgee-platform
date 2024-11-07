@@ -5,6 +5,7 @@ import io.tolgee.constants.Message
 import io.tolgee.dtos.KeyImportResolvableResult
 import io.tolgee.dtos.cacheable.ProjectDto
 import io.tolgee.dtos.queryResults.KeyView
+import io.tolgee.dtos.queryResults.keyDisabledLanguages.KeyDisabledLanguagesView
 import io.tolgee.dtos.request.GetKeysRequestDto
 import io.tolgee.dtos.request.key.CreateKeyDto
 import io.tolgee.dtos.request.key.EditKeyDto
@@ -432,6 +433,23 @@ class KeyService(
   }
 
   @Transactional
+  fun getDisabledLanguages(projectId: Long): List<KeyDisabledLanguagesView> {
+    val queryResult = keyRepository.getDisabledLanguages(projectId)
+    return queryResult.groupBy {
+      it.id
+    }.map {
+      KeyDisabledLanguagesView(
+        it.key,
+        it.value.first().name,
+        it.value.first().namespace,
+        it.value.map { disabledLanguage ->
+          KeyDisabledLanguagesView.KeyDisabledLanguageModel(disabledLanguage.languageId, disabledLanguage.languageTag)
+        },
+      )
+    }
+  }
+
+  @Transactional
   fun setDisabledLanguages(
     projectId: Long,
     keyId: Long,
@@ -461,8 +479,8 @@ class KeyService(
     languageIds: List<Long>,
     key: Key,
   ): List<Language> {
-    val languages = languageRepository.findAllByProjectIdAndIdInOrderById(projectId, languageIds)
-    languages.map { language ->
+    val languages = languageRepository.findAllByProjectIdAndIds(projectId, languageIds)
+    languages.forEach { language ->
       val translation = translationService.getOrCreate(key, language)
       translation.clear()
       translation.state = TranslationState.DISABLED

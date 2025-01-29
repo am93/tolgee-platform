@@ -239,10 +239,10 @@ class EeSubscriptionServiceImpl(
     try {
       val seats = userAccountService.countAllEnabled()
       val subscription = self.findSubscriptionDto()
-      reportUsage(seats, subscription)
+      /*reportUsage(seats, subscription)
       if (!event.decrease) {
         checkUserCount(seats, subscription)
-      }
+      }*/
     } catch (e: NoActiveSubscriptionException) {
       logger.debug("No active subscription, skipping usage reporting.")
     }

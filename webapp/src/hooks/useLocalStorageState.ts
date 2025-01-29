@@ -1,34 +1,38 @@
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
-type Props<T> = {
-  initial: T;
+type Props = {
+  initial: string | undefined;
   key: string;
-  derive?: (value: T, isInitial: boolean) => void;
+  derive?: (value: string | undefined, isInitial: boolean) => void;
 };
 
-export function useLocalStorageState<T>({ initial, key, derive }: Props<T>) {
-  const [value, _setValue] = useState<T>(() => {
+export function useLocalStorageState({ initial, key, derive }: Props) {
+  function getLocalStorageValue() {
     try {
       const storedValue = localStorage.getItem(key);
       if (storedValue) {
-        return JSON.parse(storedValue);
+        return storedValue;
       } else {
         return initial;
       }
     } catch (e) {
       return initial;
     }
-  });
+  }
 
-  function setLocalStorageValue(value: T) {
+  function setLocalStorageValue(value: string | undefined) {
     if (value === undefined) {
       localStorage.removeItem(key);
     } else {
-      localStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(key, value);
     }
   }
 
-  const setValue: Dispatch<SetStateAction<T>> = useCallback(
+  const [value, _setValue] = useState<string | undefined>(() =>
+    getLocalStorageValue()
+  );
+
+  const setValue: Dispatch<SetStateAction<string | undefined>> = useCallback(
     (valueOrFunction) => {
       if (typeof valueOrFunction === 'function') {
         return _setValue((previousValue) => {
@@ -45,6 +49,7 @@ export function useLocalStorageState<T>({ initial, key, derive }: Props<T>) {
     },
     [_setValue]
   );
+
   derive?.(value, true);
-  return [value, setValue, setLocalStorageValue] as const;
+  return [value, setValue, getLocalStorageValue] as const;
 }

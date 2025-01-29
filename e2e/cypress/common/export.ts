@@ -164,7 +164,14 @@ export const testExportFormats = (
   });
 
   testFormatWithMessageFormats(
-    ['ICU', 'PHP Sprintf', 'C Sprintf', 'Ruby Sprintf', 'Java String.format'],
+    [
+      'ICU',
+      'PHP Sprintf',
+      'C Sprintf',
+      'Ruby Sprintf',
+      'Java String.format',
+      'Python Percent',
+    ],
     {
       format: 'Gettext (.po)',
       expectedParams: {
@@ -192,6 +199,13 @@ export const testExportFormats = (
     format: 'Android .xml',
     expectedParams: {
       format: 'ANDROID_XML',
+    },
+  });
+
+  testFormat(interceptFn, submitFn, clearCheckboxesAfter, afterFn, {
+    format: 'Compose Multiplatform .xml',
+    expectedParams: {
+      format: 'COMPOSE_XML',
     },
   });
 
@@ -231,6 +245,16 @@ export const testExportFormats = (
       format: 'CSV',
       expectedParams: {
         format: 'CSV',
+      },
+    }
+  );
+
+  testFormatWithMessageFormats(
+    ['ICU', 'PHP Sprintf', 'C Sprintf', 'Ruby Sprintf', 'Java String.format'],
+    {
+      format: 'XLSX',
+      expectedParams: {
+        format: 'XLSX',
       },
     }
   );
@@ -286,6 +310,7 @@ const messageFormatParamMap = {
   'C Sprintf': 'C_SPRINTF' as MessageFormat,
   'Java String.format': 'JAVA_STRING_FORMAT' as MessageFormat,
   'Ruby Sprintf': 'RUBY_SPRINTF' as MessageFormat,
+  'Python Percent': 'PYTHON_PERCENT' as MessageFormat,
 };
 
 type MessageFormat = components['schemas']['ExportParams']['messageFormat'];

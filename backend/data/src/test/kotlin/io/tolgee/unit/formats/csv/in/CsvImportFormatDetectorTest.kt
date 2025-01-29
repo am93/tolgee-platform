@@ -49,7 +49,7 @@ class CsvImportFormatDetectorTest {
         delimiter = ',',
         languageFallback = "unknown",
       )
-    return parser.rows
+    return parser.tableParser.rows
   }
 
   private fun String.assertDetected(format: ImportFormat) {

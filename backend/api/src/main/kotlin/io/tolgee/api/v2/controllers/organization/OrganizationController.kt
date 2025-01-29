@@ -27,6 +27,7 @@ import io.tolgee.model.Project
 import io.tolgee.model.UserAccount
 import io.tolgee.model.enums.OrganizationRoleType
 import io.tolgee.model.enums.ProjectPermissionType
+import io.tolgee.model.enums.ThirdPartyAuthType
 import io.tolgee.model.views.UserAccountWithOrganizationRoleView
 import io.tolgee.openApiDocs.OpenApiOrderExtension
 import io.tolgee.security.authentication.AllowApiAccess
@@ -50,7 +51,6 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.data.web.PagedResourcesAssembler
 import org.springframework.data.web.SortDefault
-import org.springframework.hateoas.MediaTypes
 import org.springframework.hateoas.PagedModel
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -108,6 +108,11 @@ class OrganizationController(
     ) {
       throw PermissionException()
     }
+    if (authenticationFacade.authenticatedUserEntity.thirdPartyAuthType === ThirdPartyAuthType.SSO &&
+      authenticationFacade.authenticatedUser.role != UserAccount.Role.ADMIN
+    ) {
+      throw PermissionException(Message.SSO_USER_CANNOT_CREATE_ORGANIZATION)
+    }
     this.organizationService.create(dto).let {
       return ResponseEntity(
         organizationModelAssembler.toModel(OrganizationView.of(it, OrganizationRoleType.OWNER)),
@@ -142,7 +147,7 @@ class OrganizationController(
     return OrganizationView.of(organization, roleType).toModel()
   }
 
-  @GetMapping("", produces = [MediaTypes.HAL_JSON_VALUE])
+  @GetMapping("")
   @Operation(
     summary = "Get all permitted organizations",
     description = "Returns all organizations, which is current user allowed to view",

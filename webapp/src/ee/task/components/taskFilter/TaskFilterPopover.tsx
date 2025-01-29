@@ -14,6 +14,8 @@ import { components } from 'tg.service/apiSchema.generated';
 import { SubfilterAssignees } from './SubfilterAssignees';
 import { SubfilterLanguages } from './SubfilterLanguages';
 import { SubfilterProjects } from './SubfilterProjects';
+import { SubfilterAgencies } from './SubfilterAgencies';
+import { useConfig } from 'tg.globalContext/helpers';
 
 type SimpleProjectModel = components['schemas']['SimpleProjectModel'];
 type TaskType = components['schemas']['TaskModel']['type'];
@@ -28,9 +30,10 @@ const StyledListSubheader = styled(ListSubheader)`
 export type TaskFilterType = {
   languages?: number[];
   assignees?: number[];
+  agencies?: number[];
   projects?: number[];
   types?: TaskType[];
-  doneMinClosedAt?: number;
+  filterNotClosedBefore?: number;
 };
 
 type Props = {
@@ -54,6 +57,10 @@ export const TaskFilterPopover: React.FC<Props> = ({
 }) => {
   const [value, setValue] = useState(initialValue);
   const debouncedOnChange = useDebouncedCallback(onChange, 200);
+
+  const config = useConfig();
+
+  const agencyVisible = config.billing.enabled;
 
   function handleChange(value: TaskFilterType) {
     setValue(value);
@@ -103,6 +110,13 @@ export const TaskFilterPopover: React.FC<Props> = ({
           value={value.languages ?? []}
           onChange={(languages) => handleChange({ ...value, languages })}
           languages={languages ?? []}
+        />
+      )}
+
+      {agencyVisible && (
+        <SubfilterAgencies
+          value={value.agencies ?? []}
+          onChange={(agencies) => handleChange({ ...value, agencies })}
         />
       )}
 

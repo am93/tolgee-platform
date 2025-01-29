@@ -5,9 +5,11 @@ import { LoadingButton } from '@mui/lab';
 import { components } from 'tg.service/apiSchema.generated';
 import { BoxLoading } from 'tg.component/common/BoxLoading';
 import { useTaskStateTranslation } from 'tg.translationTools/useTaskStateTranslation';
+import { useEnabledFeatures } from 'tg.globalContext/helpers';
+import { DisabledFeatureBanner } from 'tg.component/common/DisabledFeatureBanner';
+import { useStateColor } from 'tg.component/task/TaskState';
 
 import { useProjectBoardTasks } from '../views/projectTasks/useProjectBoardTasks';
-import { useStateColor } from './TaskState';
 import { BoardColumn } from './BoardColumn';
 
 type TaskModel = components['schemas']['TaskModel'];
@@ -28,7 +30,7 @@ const StyledContainer = styled(Box)`
 type TasksLoadable = ReturnType<typeof useProjectBoardTasks>;
 
 type Props = {
-  showClosed: boolean;
+  showAll: boolean;
   onOpenDetail: (task: TaskModel) => void;
   newTasks: TasksLoadable;
   inProgressTasks: TasksLoadable;
@@ -38,7 +40,7 @@ type Props = {
 };
 
 export const TasksBoard = ({
-  showClosed,
+  showAll,
   onOpenDetail,
   newTasks,
   inProgressTasks,
@@ -50,6 +52,9 @@ export const TasksBoard = ({
   const { t } = useTranslate();
   const translateState = useTaskStateTranslation();
   const stateColor = useStateColor();
+  const { isEnabled } = useEnabledFeatures();
+
+  const tasksFeature = isEnabled('TASKS');
 
   const canFetchMore =
     newTasks.hasNextPage ||
@@ -61,16 +66,28 @@ export const TasksBoard = ({
     inProgressTasks.hasNextPage && inProgressTasks.fetchNextPage();
     doneTasks.hasNextPage && doneTasks.fetchNextPage();
   }
+  const loadables = [newTasks, inProgressTasks, doneTasks];
 
-  const isLoading =
-    newTasks.isLoading || inProgressTasks.isLoading || doneTasks.isLoading;
-  const isFetching =
-    newTasks.isFetching || inProgressTasks.isFetching || doneTasks.isFetching;
+  const isLoading = loadables.some((l) => l.isLoading);
+  const isFetching = loadables.some((l) => l.isFetching);
 
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center">
         <BoxLoading />
+      </Box>
+    );
+  }
+
+  const allReady = loadables.every((l) => l.isFetched);
+  const allEmpty = loadables.every(
+    (l) => l.data?.pages?.[0].page?.totalElements === 0
+  );
+
+  if (allReady && allEmpty && !tasksFeature) {
+    return (
+      <Box>
+        <DisabledFeatureBanner customMessage={t('tasks_feature_description')} />
       </Box>
     );
   }
@@ -99,7 +116,7 @@ export const TasksBoard = ({
         <BoardColumn
           state="DONE"
           title={
-            showClosed ? (
+            showAll ? (
               <Box>
                 <Box display="inline" color={stateColor('DONE')}>
                   {translateState('DONE')}
@@ -110,9 +127,13 @@ export const TasksBoard = ({
                 </Box>
               </Box>
             ) : (
-              <Box>
+              <Box display="inline">
                 <Box display="inline" color={stateColor('DONE')}>
                   {translateState('DONE')}
+                </Box>
+                <Box display="inline" color={stateColor('CLOSED')}>
+                  {' & '}
+                  {translateState('CLOSED')}
                 </Box>
                 <Box
                   display="inline"

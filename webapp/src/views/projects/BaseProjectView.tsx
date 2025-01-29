@@ -1,6 +1,5 @@
 import { Box } from '@mui/material';
 import { useHistory } from 'react-router-dom';
-import { Usage } from 'tg.component/billing/Usage';
 import { BaseView, BaseViewProps } from 'tg.component/layout/BaseView';
 import { NavigationItem } from 'tg.component/navigation/Navigation';
 import { SmallProjectAvatar } from 'tg.component/navigation/SmallProjectAvatar';
@@ -8,6 +7,7 @@ import { OrganizationSwitch } from 'tg.component/organizationSwitch/Organization
 import { LINKS, PARAMS } from 'tg.constants/links';
 import { useProject } from 'tg.hooks/useProject';
 import { BatchOperationsSummary } from './translations/BatchOperations/OperationsSummary/OperationsSummary';
+import { Usage } from 'tg.ee';
 
 type Props = BaseViewProps;
 
@@ -42,7 +42,7 @@ export const BaseProjectView: React.FC<Props> = ({
       {...otherProps}
       navigation={[...prefixNavigation, ...(navigation || [])]}
       navigationRight={
-        <Box display="grid">
+        <Box display="grid" gridAutoFlow="column" gap={1}>
           <BatchOperationsSummary />
           <Usage />
         </Box>

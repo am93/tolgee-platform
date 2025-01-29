@@ -39,11 +39,11 @@ import io.tolgee.security.authentication.AllowApiAccess
 import io.tolgee.security.authentication.AuthenticationFacade
 import io.tolgee.security.authorization.RequiresProjectPermissions
 import io.tolgee.security.authorization.UseDefaultPermissions
-import io.tolgee.service.ITaskService
 import io.tolgee.service.key.ScreenshotService
 import io.tolgee.service.language.LanguageService
 import io.tolgee.service.queryBuilders.CursorUtil
 import io.tolgee.service.security.SecurityService
+import io.tolgee.service.task.ITaskService
 import io.tolgee.service.translation.TranslationService
 import jakarta.validation.Valid
 import org.springdoc.core.annotations.ParameterObject
@@ -132,7 +132,7 @@ class TranslationsController(
       description =
         "Comma-separated language tags to return translations in. " +
           "Languages you are not permitted to see will be silently dropped and not returned.",
-      example = "en,de,fr",
+      example = """["en","de","fr"]""",
     )
     @PathVariable("languages")
     languages: Set<String>,
@@ -148,6 +148,15 @@ When null, resulting file will be a flat key-value object.
     )
     @RequestParam(value = "structureDelimiter", defaultValue = ".", required = false)
     structureDelimiter: Char?,
+    @Parameter(
+      description =
+        "Enables filtering of returned keys by their tags.\n" +
+          "Only keys with at least one provided tag will be returned.\n" +
+          "Optional, filtering is not applied if not specified.",
+      example = """["productionReady", "nextRelease"]""",
+    )
+    @RequestParam(value = "filterTag", required = false)
+    filterTag: List<String>? = null,
     request: WebRequest,
   ): ResponseEntity<Map<String, Any>>? {
     val lastModified: Long = projectTranslationLastModifiedManager.getLastModified(projectHolder.project.id)
@@ -166,6 +175,7 @@ When null, resulting file will be a flat key-value object.
         namespace = ns,
         projectId = projectHolder.project.id,
         structureDelimiter = request.getStructureDelimiter(),
+        filterTag = filterTag,
       )
 
     return ResponseEntity.ok()

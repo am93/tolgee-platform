@@ -3,24 +3,23 @@ import { Box, Dialog, useMediaQuery } from '@mui/material';
 import { useTranslate } from '@tolgee/react';
 
 import { useProject } from 'tg.hooks/useProject';
-import { LINKS, PARAMS } from 'tg.constants/links';
+import { LINKS, PARAMS, QUERY } from 'tg.constants/links';
 import { useApiQuery } from 'tg.service/http/useQueryApi';
 import { components } from 'tg.service/apiSchema.generated';
 import { useUrlSearchState } from 'tg.hooks/useUrlSearchState';
 import { projectPreferencesService } from 'tg.service/ProjectPreferencesService';
 import { useProjectPermissions } from 'tg.hooks/useProjectPermissions';
 import { useGlobalContext } from 'tg.globalContext/GlobalContext';
-import { TaskFilterType } from 'tg.ee/task/components/taskFilter/TaskFilterPopover';
+import { TaskFilterType } from 'tg.ee.module/task/components/taskFilter/TaskFilterPopover';
 import { BaseProjectView } from 'tg.views/projects/BaseProjectView';
-import { TasksHeader } from 'tg.ee/task/components/tasksHeader/TasksHeader';
-import { TaskView } from 'tg.ee/task/components/tasksHeader/TasksHeaderBig';
-import { TaskCreateDialog } from 'tg.ee/task/components/taskCreate/TaskCreateDialog';
-import { TaskDetail } from 'tg.ee/task/components/TaskDetail';
+import { TasksHeader } from 'tg.ee.module/task/components/tasksHeader/TasksHeader';
+import { TaskView } from 'tg.ee.module/task/components/tasksHeader/TasksHeaderBig';
+import { TaskCreateDialog } from 'tg.ee.module/task/components/taskCreate/TaskCreateDialog';
+import { TaskDetail } from 'tg.ee.module/task/components/TaskDetail';
 
-import { TasksList } from './TasksList';
 import { ProjectTasksBoard } from './ProjectTasksBoard';
-import { useEnabledFeatures } from 'tg.globalContext/helpers';
-import { PaidFeatureBanner } from 'tg.ee/common/PaidFeatureBanner';
+import { ProjectTasksList } from './ProjectTasksList';
+import { OrderTranslationsDialog } from 'tg.ee';
 
 type TaskModel = components['schemas']['TaskModel'];
 
@@ -30,9 +29,13 @@ export const ProjectTasksView = () => {
   const project = useProject();
   const { t } = useTranslate();
   const [search, setSearch] = useUrlSearchState('search', { defaultVal: '' });
-  const [showClosed, setShowClosed] = useUrlSearchState('showClosed', {
-    defaultVal: 'false',
-  });
+  const [showAll, setShowAll] = useUrlSearchState(
+    QUERY.TASKS_FILTERS_SHOW_ALL,
+    {
+      defaultVal: 'false',
+    }
+  );
+
   const { satisfiesPermission } = useProjectPermissions();
   const [view, setView] = useUrlSearchState('view', {
     defaultVal: 'LIST',
@@ -66,22 +69,28 @@ export const ProjectTasksView = () => {
   const [types, setTypes] = useUrlSearchState('type', {
     array: true,
   });
+  const [agencies, setAgencies] = useUrlSearchState('agencies', {
+    array: true,
+  });
 
   const filter: TaskFilterType = {
     assignees: assignees?.map((a) => Number(a)),
     languages: languages?.map((l) => Number(l)),
+    agencies: agencies?.map((a) => Number(a)),
     types: types as any[],
-    doneMinClosedAt: showClosed === 'true' ? undefined : minus30Days,
+    filterNotClosedBefore: showAll === 'true' ? undefined : minus30Days,
   };
 
   function setFilter(val: TaskFilterType) {
     setAssignees(val.assignees?.map((a) => String(a)));
     setLanguages(val.languages?.map((l) => String(l)));
+    setAgencies(val.agencies?.map((a) => String(a)));
     setTypes(val.types?.map((l) => String(l)));
   }
 
   const [detail, setDetail] = useState<TaskModel>();
   const [addDialog, setAddDialog] = useState(false);
+  const [orderTranslation, setOrderTranslation] = useState(false);
 
   const allLanguages = languagesLoadable.data?._embedded?.languages ?? [];
 
@@ -92,9 +101,6 @@ export const ProjectTasksView = () => {
   const languagesPreference = projectPreferencesService.getForProject(
     project.id
   );
-
-  const { features } = useEnabledFeatures();
-  const taskFeature = features.includes('TASKS');
 
   return (
     <BaseProjectView
@@ -111,71 +117,81 @@ export const ProjectTasksView = () => {
         ],
       ]}
     >
-      {!taskFeature ? (
-        <Box>
-          <PaidFeatureBanner customMessage={t('tasks_feature_description')} />
-        </Box>
-      ) : (
-        <>
-          <Box display="grid" gridTemplateRows="auto 1fr">
-            <TasksHeader
-              sx={{ mb: '20px', mt: '-12px' }}
-              onSearchChange={setSearch}
-              showClosed={showClosed === 'true'}
-              onShowClosedChange={(val) => setShowClosed(String(val))}
-              filter={filter}
-              onFilterChange={setFilter}
-              onAddTask={canEditTasks ? () => setAddDialog(true) : undefined}
-              view={view as TaskView}
-              onViewChange={setView}
-              isSmall={isSmall}
-              project={project}
-            />
+      <Box display="grid" gridTemplateRows="auto 1fr">
+        <TasksHeader
+          sx={{ mb: '20px', mt: '-12px' }}
+          onSearchChange={setSearch}
+          showAll={showAll === 'true'}
+          onShowAllChange={(val) => setShowAll(String(val))}
+          filter={filter}
+          onFilterChange={setFilter}
+          onAddTask={canEditTasks ? () => setAddDialog(true) : undefined}
+          view={view as TaskView}
+          onViewChange={setView}
+          isSmall={isSmall}
+          project={project}
+          onOrderTranslation={
+            canEditTasks ? () => setOrderTranslation(true) : undefined
+          }
+        />
 
-            {view === 'LIST' && !isSmall ? (
-              <TasksList
-                search={search}
-                filter={filter}
-                showClosed={showClosed === 'true'}
-                onOpenDetail={setDetail}
-                newTaskActions={true}
-              />
-            ) : (
-              <ProjectTasksBoard
-                search={search}
-                filter={filter}
-                showClosed={showClosed === 'true'}
-                onOpenDetail={setDetail}
-              />
-            )}
-            {detail !== undefined && (
-              <Dialog open={true} onClose={handleDetailClose} maxWidth="xl">
-                <TaskDetail
-                  taskNumber={detail.number}
-                  onClose={handleDetailClose}
-                  projectId={project.id}
-                  task={detail}
-                />
-              </Dialog>
-            )}
-            {addDialog && (
-              <TaskCreateDialog
-                open={addDialog}
-                onClose={() => setAddDialog(false)}
-                onFinished={() => setAddDialog(false)}
-                initialValues={{
-                  languages: allLanguages
-                    .filter((l) => languagesPreference.includes(l.tag))
-                    .filter((l) => !l.base)
-                    .map((l) => l.id),
-                }}
-                projectId={project.id}
-                allLanguages={allLanguages}
-              />
-            )}
-          </Box>
-        </>
-      )}
+        {view === 'LIST' && !isSmall ? (
+          <ProjectTasksList
+            search={search}
+            filter={filter}
+            showAll={showAll === 'true'}
+            onOpenDetail={setDetail}
+            newTaskActions={true}
+          />
+        ) : (
+          <ProjectTasksBoard
+            search={search}
+            filter={filter}
+            showAll={showAll === 'true'}
+            onOpenDetail={setDetail}
+          />
+        )}
+        {detail !== undefined && (
+          <Dialog open={true} onClose={handleDetailClose} maxWidth="xl">
+            <TaskDetail
+              taskNumber={detail.number}
+              onClose={handleDetailClose}
+              projectId={project.id}
+              task={detail}
+            />
+          </Dialog>
+        )}
+        {addDialog && (
+          <TaskCreateDialog
+            open={addDialog}
+            onClose={() => setAddDialog(false)}
+            onFinished={() => setAddDialog(false)}
+            initialValues={{
+              languages: allLanguages
+                .filter((l) => languagesPreference.includes(l.tag))
+                .filter((l) => !l.base)
+                .map((l) => l.id),
+            }}
+            projectId={project.id}
+            allLanguages={allLanguages}
+          />
+        )}
+        {orderTranslation && (
+          <OrderTranslationsDialog
+            open={orderTranslation}
+            onClose={() => setOrderTranslation(false)}
+            onFinished={() => setOrderTranslation(false)}
+            initialValues={{
+              languages: allLanguages
+                .filter((l) => languagesPreference.includes(l.tag))
+                .filter((l) => !l.base)
+                .map((l) => l.id),
+            }}
+            projectId={project.id}
+            allLanguages={allLanguages}
+          />
+        )}
+      </Box>
     </BaseProjectView>
   );
 };

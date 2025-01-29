@@ -7,14 +7,15 @@ import { AiLanguagesTable } from './AiLanguagesTable';
 import { AiProjectDescription } from './AiProjectDescription';
 import { BoxLoading } from 'tg.component/common/BoxLoading';
 import { useEnabledFeatures } from 'tg.globalContext/helpers';
-import { PaidFeatureBanner } from 'tg.ee/common/PaidFeatureBanner';
+import { DisabledFeatureBanner } from 'tg.component/common/DisabledFeatureBanner';
 
+// TODO: Move to EE
 export const AiCustomization = () => {
   const project = useProject();
-  const { features } = useEnabledFeatures();
+  const { isEnabled } = useEnabledFeatures();
   const { t } = useTranslate();
 
-  const featureEnabled = features.includes('AI_PROMPT_CUSTOMIZATION');
+  const featureEnabled = isEnabled('AI_PROMPT_CUSTOMIZATION');
 
   const languagesLoadable = useApiQuery({
     url: '/v2/projects/{projectId}/languages',
@@ -49,7 +50,7 @@ export const AiCustomization = () => {
   if (!featureEnabled) {
     return (
       <Box mt={4} mb={3} gap={3} display="grid">
-        <PaidFeatureBanner
+        <DisabledFeatureBanner
           customMessage={t('ai_customization_not_enabled_message')}
         />
       </Box>

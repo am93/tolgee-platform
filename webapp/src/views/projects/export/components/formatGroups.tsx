@@ -92,6 +92,7 @@ export const formatGroups: FormatGroup[] = [
           'JAVA_STRING_FORMAT',
           'ICU',
           'RUBY_SPRINTF',
+          'PYTHON_PERCENT',
         ],
       },
       {
@@ -156,6 +157,19 @@ export const formatGroups: FormatGroup[] = [
           'RUBY_SPRINTF',
         ],
       },
+      {
+        id: 'generic_xlsx',
+        extension: 'xlsx',
+        name: <T keyName="export-format-xlsx" />,
+        format: 'XLSX',
+        supportedMessageFormats: [
+          'ICU',
+          'JAVA_STRING_FORMAT',
+          'PHP_SPRINTF',
+          'C_SPRINTF',
+          'RUBY_SPRINTF',
+        ],
+      },
     ],
   },
   {
@@ -183,6 +197,17 @@ export const formatGroups: FormatGroup[] = [
         extension: 'xml',
         name: <T keyName="export-format-android-xml" />,
         format: 'ANDROID_XML',
+      },
+    ],
+  },
+  {
+    name: 'Compose Multiplatform',
+    formats: [
+      {
+        id: 'compose_xml',
+        extension: 'xml',
+        name: <T keyName="export-format-compose-xml" />,
+        format: 'COMPOSE_XML',
       },
     ],
   },
@@ -240,6 +265,17 @@ export const formatGroups: FormatGroup[] = [
         format: 'JSON_I18NEXT',
         matchByExportParams: (params) =>
           params.format === 'JSON_I18NEXT' && params.structureDelimiter === '.',
+      },
+    ],
+  },
+  {
+    name: '.NET',
+    formats: [
+      {
+        id: 'resx_icu',
+        extension: 'resx',
+        name: <T keyName="export-format-resx-xml" />,
+        format: 'RESX_ICU',
       },
     ],
   },

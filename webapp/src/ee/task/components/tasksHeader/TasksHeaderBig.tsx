@@ -8,6 +8,7 @@ import {
   InputAdornment,
   styled,
   SxProps,
+  Tooltip,
 } from '@mui/material';
 import { useDebounceCallback } from 'usehooks-ts';
 import {
@@ -15,6 +16,7 @@ import {
   Plus,
   Rows03,
   SearchSm,
+  ShoppingCart01,
 } from '@untitled-ui/icons-react';
 import { useTranslate } from '@tolgee/react';
 
@@ -43,11 +45,12 @@ type Props = {
   sx?: SxProps;
   className?: string;
   onSearchChange: (value: string) => void;
-  showClosed: boolean;
-  onShowClosedChange: (value: boolean) => void;
+  showAll: boolean;
+  onShowAllChange: (value: boolean) => void;
   filter: TaskFilterType;
   onFilterChange: (value: TaskFilterType) => void;
   onAddTask?: () => void;
+  onOrderTranslation?: () => void;
   view: TaskView;
   onViewChange: (view: TaskView) => void;
   project?: SimpleProjectModel;
@@ -57,11 +60,12 @@ export const TasksHeaderBig = ({
   sx,
   className,
   onSearchChange,
-  showClosed,
-  onShowClosedChange,
+  showAll,
+  onShowAllChange,
   filter,
   onFilterChange,
   onAddTask,
+  onOrderTranslation,
   view,
   onViewChange,
   project,
@@ -96,21 +100,22 @@ export const TasksHeaderBig = ({
           project={project}
         />
         <FormControlLabel
-          checked={showClosed}
-          onChange={() => onShowClosedChange(!showClosed)}
+          checked={showAll}
+          onChange={() => onShowAllChange(!showAll)}
           control={<Checkbox size="small" />}
-          data-cy="tasks-header-show-closed"
+          data-cy="tasks-header-show-all"
+          sx={{ whiteSpace: 'nowrap' }}
           label={
             <Box display="flex">
-              {t('tasks_show_closed_label')}
-              <LabelHint title={t('tasks_show_closed_label_tooltip')}>
+              {t('tasks_show_all_label')}
+              <LabelHint title={t('tasks_show_all_label_tooltip')}>
                 <span />
               </LabelHint>
             </Box>
           }
         />
       </Box>
-      <Box sx={{ display: 'flex', gap: '16px' }}>
+      <Box sx={{ display: 'flex', gap: '12px' }}>
         <ButtonGroup>
           <StyledToggleButton
             color={view === 'LIST' ? 'primary' : 'default'}
@@ -127,6 +132,20 @@ export const TasksHeaderBig = ({
             <BarChartSquare01 style={{ rotate: '180deg' }} />
           </StyledToggleButton>
         </ButtonGroup>
+
+        {onOrderTranslation && (
+          <Tooltip title={t('tasks_order_translation_tooltip')}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<ShoppingCart01 width={19} height={19} />}
+              onClick={onOrderTranslation}
+              data-cy="tasks-header-order-translation"
+            >
+              {t('tasks_order_translation')}
+            </Button>
+          </Tooltip>
+        )}
 
         {onAddTask && (
           <Button

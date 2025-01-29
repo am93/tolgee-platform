@@ -14,14 +14,13 @@ import io.tolgee.model.key.Key_
 import io.tolgee.model.key.Namespace_
 import io.tolgee.model.keyBigMeta.KeysDistance
 import io.tolgee.repository.KeysDistanceRepository
-import io.tolgee.util.Logging
-import io.tolgee.util.equalNullable
-import io.tolgee.util.executeInNewTransaction
-import io.tolgee.util.runSentryCatching
+import io.tolgee.util.*
 import jakarta.persistence.EntityManager
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.context.event.EventListener
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.scheduling.annotation.Async
@@ -39,11 +38,9 @@ class BigMetaService(
   private val currentDateProvider: CurrentDateProvider,
   private val metrics: Metrics,
 ) : Logging {
-  companion object {
-    const val MAX_DISTANCE_SCORE = 10000L
-    const val MAX_POINTS = 2000L
-    const val MAX_ORDER_DISTANCE = 20
-  }
+  @Lazy
+  @Autowired
+  private lateinit var self: BigMetaService
 
   fun saveKeyDistance(keysDistance: KeysDistance): KeysDistance {
     return keysDistanceRepository.save(keysDistance)
@@ -57,10 +54,15 @@ class BigMetaService(
     store(data.relatedKeysInOrder, project)
   }
 
+  /**
+   * @param forKeyId if provided, only distances for this key will be stored synchronously,
+   * other key distances will be stored asynchronously, so the request can finish faster
+   */
   @Transactional
   fun store(
     relatedKeysInOrder: MutableList<RelatedKeyDto>?,
     project: Project,
+    forKeyId: Long? = null,
   ) {
     if (relatedKeysInOrder.isNullOrEmpty()) {
       return
@@ -71,16 +73,55 @@ class BigMetaService(
         KeysDistanceUtil(relatedKeysInOrder, project, this)
       }!!
 
+    val (toStore, toDelete) = util.toStoreAndDelete
+
+    val (toStoreSync, toStoreAsync) =
+      if (forKeyId == null) {
+        toStore to emptyList()
+      } else {
+        toStore.partition { it.key1Id == forKeyId || it.key2Id == forKeyId }
+      }
+
     metrics.bigMetaStoringTimer.recordCallable {
-      insertNewDistances(util.newDistances)
+      insertNewDistances(toStoreSync)
+    }
+
+    self.asyncInsertNewDistances(toStoreAsync)
+    self.asyncDeleteDistances(toDelete)
+  }
+
+  @Async
+  fun asyncInsertNewDistances(toInsert: List<KeysDistanceDto>) {
+    metrics.bigMetaStoringAsyncTimer.recordCallable {
+      insertNewDistances(toInsert)
     }
   }
 
-  private fun insertNewDistances(toInsert: List<KeysDistanceDto>) {
+  @Async
+  fun asyncDeleteDistances(toDelete: MutableSet<KeysDistanceDto>) {
+    if (toDelete.isEmpty()) {
+      return
+    }
+    jdbcTemplate.batchUpdate(
+      """
+      delete from keys_distance where key1id = ? and key2id = ?
+      """,
+      toDelete,
+      10000,
+    ) { ps, dto ->
+      ps.setLong(1, dto.key1Id)
+      ps.setLong(2, dto.key2Id)
+    }
+  }
+
+  private fun insertNewDistances(toInsert: Collection<KeysDistanceDto>) {
+    if (toInsert.isEmpty()) {
+      return
+    }
     val timestamp = Timestamp(currentDateProvider.date.time)
     jdbcTemplate.batchUpdate(
       """
-      insert into keys_distance (key1id, key2id, score, hits, created_at, updated_at, project_id) 
+      insert into keys_distance (key1id, key2id, distance, hits, created_at, updated_at, project_id) 
       values (?, ?, ?, ?, ?, ?, ?)
       on conflict (key1id, key2id) do update set score = excluded.score, hits = excluded.hits, updated_at = ?
       """,
@@ -89,7 +130,7 @@ class BigMetaService(
     ) { ps, dto ->
       ps.setLong(1, dto.key1Id)
       ps.setLong(2, dto.key2Id)
-      ps.setLong(3, dto.score)
+      ps.setDouble(3, dto.distance)
       ps.setLong(4, dto.hits)
       ps.setTimestamp(5, timestamp)
       ps.setTimestamp(6, timestamp)
@@ -123,7 +164,7 @@ class BigMetaService(
   fun findExistingKeysDistancesDtosByIds(keyIds: List<Long>): Set<KeysDistanceDto> {
     return entityManager.createQuery(
       """
-       select new io.tolgee.service.bigMeta.KeysDistanceDto(kd.key1Id, kd.key2Id, kd.score, kd.project.id, kd.hits) from KeysDistance kd
+       select new io.tolgee.service.bigMeta.KeysDistanceDto(kd.key1Id, kd.key2Id, kd.distance, kd.project.id, kd.hits, true) from KeysDistance kd
         where kd.key1Id in (
             select kd2.key1Id from KeysDistance kd2 where kd2.key1Id in :data or kd2.key2Id in :data
         ) or kd.key2Id in (

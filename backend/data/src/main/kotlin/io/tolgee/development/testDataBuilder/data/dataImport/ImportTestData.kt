@@ -396,13 +396,15 @@ class ImportTestData {
     importBuilder.addImportFile {
       name = "file.json"
       namespace = "homepage"
+      detectedNamespace = "homepage"
     }.build {
       addImportLanguage {
         name = "fr"
+        existingLanguage = french
         importFrenchInNs = this
       }.build addFrLang@{
         addImportKey {
-          name = "what a key"
+          name = "what a key with a namespace"
         }.build addImportKey@{
           addImportTranslation {
             language = this@addFrLang.self

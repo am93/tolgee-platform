@@ -16,11 +16,13 @@ import io.tolgee.model.Permission
 import io.tolgee.model.UserAccount
 import io.tolgee.model.enums.OrganizationRoleType
 import io.tolgee.model.enums.ProjectPermissionType
+import io.tolgee.model.enums.ThirdPartyAuthType
 import io.tolgee.repository.OrganizationRepository
 import io.tolgee.security.authentication.AuthenticationFacade
 import io.tolgee.service.AvatarService
-import io.tolgee.service.InvitationService
 import io.tolgee.service.QuickStartService
+import io.tolgee.service.TenantService
+import io.tolgee.service.invitation.InvitationService
 import io.tolgee.service.project.ProjectService
 import io.tolgee.service.security.PermissionService
 import io.tolgee.service.security.UserPreferencesService
@@ -39,6 +41,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.awt.Dimension
 import java.io.InputStream
 import io.tolgee.dtos.cacheable.OrganizationDto as CachedOrganizationDto
 
@@ -46,6 +49,7 @@ import io.tolgee.dtos.cacheable.OrganizationDto as CachedOrganizationDto
 @Transactional
 class OrganizationService(
   private val organizationRepository: OrganizationRepository,
+  private val tenantService: TenantService?,
   private val authenticationFacade: AuthenticationFacade,
   private val slugGenerator: SlugGenerator,
   private val organizationRoleService: OrganizationRoleService,
@@ -145,7 +149,11 @@ class OrganizationService(
     exceptOrganizationId: Long = 0,
   ): Organization? {
     return findPreferred(userAccount.id, exceptOrganizationId) ?: let {
-      if (tolgeeProperties.authentication.userCanCreateOrganizations || userAccount.role == UserAccount.Role.ADMIN) {
+      val canCreateOrganizations =
+        tolgeeProperties.authentication.userCanCreateOrganizations &&
+          userAccount.thirdPartyAuthType !== ThirdPartyAuthType.SSO
+
+      if (canCreateOrganizations || userAccount.role == UserAccount.Role.ADMIN) {
         return@let createPreferred(userAccount)
       }
       null
@@ -237,6 +245,11 @@ class OrganizationService(
     ],
   )
   fun delete(organization: Organization) {
+    val tenant = organization.ssoTenant
+    if (tenant != null && tenant.enabled) {
+      tenant.enabled = false
+      tenantService?.save(tenant)
+    }
     organization.deletedAt = currentDateProvider.date
     save(organization)
     eventPublisher.publishEvent(BeforeOrganizationDeleteEvent(organization))
@@ -301,7 +314,7 @@ class OrganizationService(
     organization: Organization,
     avatar: InputStream,
   ) {
-    avatarService.setAvatar(organization, avatar)
+    avatarService.setAvatar(organization, avatar, Dimension(300, 60))
   }
 
   /**

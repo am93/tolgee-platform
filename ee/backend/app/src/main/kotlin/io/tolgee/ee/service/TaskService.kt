@@ -21,23 +21,26 @@ import io.tolgee.model.enums.TaskState
 import io.tolgee.model.enums.TaskType
 import io.tolgee.model.task.Task
 import io.tolgee.model.task.TaskKey
+import io.tolgee.model.translationAgency.TranslationAgency
 import io.tolgee.model.views.KeysScopeView
 import io.tolgee.model.views.TaskPerUserReportView
 import io.tolgee.model.views.TaskWithScopeView
 import io.tolgee.model.views.TranslationToTaskView
 import io.tolgee.repository.TaskKeyRepository
 import io.tolgee.security.authentication.AuthenticationFacade
-import io.tolgee.service.ITaskService
 import io.tolgee.service.key.KeyService
 import io.tolgee.service.language.LanguageService
 import io.tolgee.service.project.ProjectService
+import io.tolgee.service.security.PermissionService
 import io.tolgee.service.security.SecurityService
+import io.tolgee.service.task.ITaskService
 import io.tolgee.util.executeInNewRepeatableTransaction
 import jakarta.persistence.EntityManager
 import jakarta.transaction.Transactional
 import org.apache.commons.io.output.ByteArrayOutputStream
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
+import org.springframework.context.annotation.Primary
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -47,6 +50,7 @@ import org.springframework.transaction.PlatformTransactionManager
 import java.util.*
 import kotlin.math.max
 
+@Primary
 @Component
 class TaskService(
   private val taskRepository: TaskRepository,
@@ -56,15 +60,15 @@ class TaskService(
   private val securityService: SecurityService,
   private val taskKeyRepository: TaskKeyRepository,
   private val authenticationFacade: AuthenticationFacade,
-  @Lazy
-  @Autowired
-  private val taskService: TaskService,
   private val assigneeNotificationService: AssigneeNotificationService,
   @Autowired
   private val platformTransactionManager: PlatformTransactionManager,
   private val currentDateProvider: CurrentDateProvider,
   private val keyService: KeyService,
   private val projectService: ProjectService,
+  private val permissionService: PermissionService,
+  @Lazy
+  private val taskService: TaskService,
 ) : ITaskService {
   fun getAllPaged(
     projectId: Long,
@@ -111,8 +115,9 @@ class TaskService(
     projectId: Long,
     dto: CreateTaskRequest,
     filters: TranslationScopeFilters,
+    agencyId: Long? = null,
   ): TaskWithScopeView {
-    val task = taskService.createSingleTask(projectId, dto, filters)
+    val task = taskService.createSingleTask(projectId, dto, filters, agencyId)
     val prefetched = taskService.getPrefetchedTasks(listOf(task)).first()
     return getTaskWithScope(prefetched)
   }
@@ -132,13 +137,14 @@ class TaskService(
     projectId: Long,
     dto: CreateTaskRequest,
     filters: TranslationScopeFilters,
+    agencyId: Long? = null,
   ): Task {
     var lastErr = DataIntegrityViolationException("Error")
     repeat(10) {
       // necessary for proper transaction creation
       try {
         return executeInNewRepeatableTransaction(platformTransactionManager) {
-          val task = taskService.createTaskInTransaction(projectId, dto, filters)
+          val task = taskService.createTaskInTransaction(projectId, dto, filters, agencyId)
           entityManager.flush()
           task.assignees.forEach {
             assigneeNotificationService.notifyNewAssignee(it, task)
@@ -157,6 +163,7 @@ class TaskService(
     projectId: Long,
     dto: CreateTaskRequest,
     filters: TranslationScopeFilters,
+    agencyId: Long? = null,
   ): Task {
     val newNumber = getNextTaskNumber(projectId)
     val language = checkLanguage(dto.languageId!!, projectId)
@@ -171,6 +178,7 @@ class TaskService(
       )
 
     val task = Task()
+    val authorId = authenticationFacade.authenticatedUser.id
 
     task.number = newNumber
     task.project = entityManager.getReference(Project::class.java, projectId)
@@ -180,7 +188,10 @@ class TaskService(
     task.dueDate = dto.dueDate?.let { Date(it) }
     task.language = language
     task.assignees = assignees
-    task.author = entityManager.getReference(UserAccount::class.java, authenticationFacade.authenticatedUser.id)
+    task.author = entityManager.getReference(UserAccount::class.java, authorId)
+    task.agency = agencyId?.let {
+      entityManager.getReference(TranslationAgency::class.java, it)
+    } ?: permissionService.findPermissionNonCached(projectId, authorId)?.agency
     task.state = TaskState.NEW
     taskRepository.saveAndFlush(task)
     val keys = keyService.getByIds(keyIds)
@@ -230,6 +241,7 @@ class TaskService(
     }
     if (state == TaskState.NEW || state == TaskState.IN_PROGRESS) {
       task.state = if (taskWithScope.doneItems == 0L) TaskState.NEW else TaskState.IN_PROGRESS
+      task.closedAt = null
     } else {
       task.closedAt = currentDateProvider.date
       task.state = state
@@ -478,6 +490,7 @@ class TaskService(
         doneItems = scope.doneItems,
         baseWordCount = scope.baseWordCount,
         baseCharacterCount = scope.baseCharacterCount,
+        agency = task.agency,
       )
     }
   }
@@ -507,6 +520,7 @@ class TaskService(
     }
   }
 
+  @Transactional
   fun getExcelFile(
     project: Project,
     taskNumber: Long,
@@ -534,5 +548,9 @@ class TaskService(
       )
     }
     return null
+  }
+
+  override fun getAgencyTasks(agencyId: Long): List<Task> {
+    return taskRepository.getByAgencyId(agencyId)
   }
 }

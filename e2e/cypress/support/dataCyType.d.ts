@@ -1,5 +1,8 @@
 declare namespace DataCy {
     export type Value = 
+        "accept-invitation-accept" |
+        "accept-invitation-decline" |
+        "accept-invitation-info-text" |
         "account-security-initial-password-set" |
         "account-security-set-password-instructions-sent" |
         "active-plan-license-key-input" |
@@ -7,13 +10,13 @@ declare namespace DataCy {
         "activity-compact-detail-button" |
         "activity-detail" |
         "activity-detail-dialog" |
-        "add-box" |
         "administration-access-message" |
         "administration-cloud-plan-field-feature" |
         "administration-cloud-plan-field-free" |
         "administration-cloud-plan-field-included-mt-credits" |
         "administration-cloud-plan-field-included-translations" |
         "administration-cloud-plan-field-name" |
+        "administration-cloud-plan-field-non-commercial" |
         "administration-cloud-plan-field-price-monthly" |
         "administration-cloud-plan-field-price-per-thousand-mt-credits" |
         "administration-cloud-plan-field-price-per-thousand-translations" |
@@ -32,6 +35,7 @@ declare namespace DataCy {
         "administration-debug-customer-exit-button" |
         "administration-ee-license-key-input" |
         "administration-ee-license-release-key-button" |
+        "administration-ee-plan-cancel-button" |
         "administration-ee-plan-field-feature" |
         "administration-ee-plan-field-free" |
         "administration-ee-plan-field-included-mt-credits" |
@@ -48,6 +52,12 @@ declare namespace DataCy {
         "administration-ee-plans-item-delete" |
         "administration-ee-plans-item-edit" |
         "administration-ee-plans-item-public-badge" |
+        "administration-ee-translation-agencies-field-description" |
+        "administration-ee-translation-agencies-field-email" |
+        "administration-ee-translation-agencies-field-email-bcc" |
+        "administration-ee-translation-agencies-field-name" |
+        "administration-ee-translation-agencies-field-services" |
+        "administration-ee-translation-agencies-field-url" |
         "administration-frame" |
         "administration-organizations-list-item" |
         "administration-organizations-projects-button" |
@@ -59,6 +69,9 @@ declare namespace DataCy {
         "administration-user-menu" |
         "administration-user-role-select" |
         "administration-users-list-item" |
+        "agency-label" |
+        "agency-select" |
+        "agency-select-item" |
         "ai-customization-project-description" |
         "ai-customization-project-description-add" |
         "ai-customization-project-description-edit" |
@@ -119,6 +132,8 @@ declare namespace DataCy {
         "billing-upgrade-preview-confirm-button" |
         "billing-usage-table" |
         "billing_period_annual" |
+        "cell-key-screenshot-dropzone" |
+        "cell-key-screenshot-file-input" |
         "checkbox-group-multiselect" |
         "comment" |
         "comment-menu" |
@@ -129,6 +144,7 @@ declare namespace DataCy {
         "content-delivery-add-button" |
         "content-delivery-auto-publish-checkbox" |
         "content-delivery-delete-button" |
+        "content-delivery-files-button" |
         "content-delivery-form-custom-slug" |
         "content-delivery-form-name" |
         "content-delivery-form-save" |
@@ -137,6 +153,7 @@ declare namespace DataCy {
         "content-delivery-item-type" |
         "content-delivery-list-item" |
         "content-delivery-prune-before-publish-checkbox" |
+        "content-delivery-published-file" |
         "content-delivery-storage-selector" |
         "content-delivery-storage-selector-item" |
         "content-delivery-subtitle" |
@@ -158,6 +175,7 @@ declare namespace DataCy {
         "edit-pat-dialog-content" |
         "edit-pat-dialog-description-input" |
         "edit-pat-dialog-title" |
+        "empty-scope-dialog" |
         "expiration-date-field" |
         "expiration-date-picker" |
         "expiration-select" |
@@ -210,6 +228,7 @@ declare namespace DataCy {
         "import-file-input" |
         "import-file-issues-button" |
         "import-file-issues-dialog" |
+        "import-file-warnings" |
         "import-override-key-descriptions-checkbox" |
         "import-progress" |
         "import-progress-overlay" |
@@ -256,6 +275,7 @@ declare namespace DataCy {
         "invitation-dialog-input-field" |
         "invitation-dialog-invite-button" |
         "invitation-dialog-role-button" |
+        "invitation-dialog-type-agency-button" |
         "invitation-dialog-type-email-button" |
         "invitation-dialog-type-link-button" |
         "invite-generate-button" |
@@ -327,6 +347,12 @@ declare namespace DataCy {
         "namespaces-select-text-field" |
         "namespaces-selector" |
         "navigation-item" |
+        "order-translation-confirmation" |
+        "order-translation-confirmation-ok" |
+        "order-translation-invitation-checkbox" |
+        "order-translation-next" |
+        "order-translation-sharing-details-consent-checkbox" |
+        "order-translation-submit" |
         "organization-address-part-field" |
         "organization-description-field" |
         "organization-invitation-cancel-button" |
@@ -355,6 +381,8 @@ declare namespace DataCy {
         "pat-list-item-last-used" |
         "pat-list-item-new-token-input" |
         "pat-list-item-regenerate-button" |
+        "pending-invitation-banner" |
+        "pending-invitation-dismiss" |
         "permissions-advanced-checkbox" |
         "permissions-advanced-item" |
         "permissions-language-menu-button" |
@@ -402,6 +430,7 @@ declare namespace DataCy {
         "project-list-translations-button" |
         "project-member-item" |
         "project-member-revoke-button" |
+        "project-members-invitation-item" |
         "project-menu-item" |
         "project-menu-item-dashboard" |
         "project-menu-item-developer" |
@@ -430,6 +459,7 @@ declare namespace DataCy {
         "project-settings-menu-general" |
         "project-settings-name" |
         "project-settings-transfer-button" |
+        "project-settings-use-namespaces-checkbox" |
         "project-settings-use-tolgee-placeholders-checkbox" |
         "project-states-bar-bar" |
         "project-states-bar-dot" |
@@ -520,7 +550,8 @@ declare namespace DataCy {
         "tasks-filter-menu" |
         "tasks-header-add-task" |
         "tasks-header-filter-select" |
-        "tasks-header-show-closed" |
+        "tasks-header-order-translation" |
+        "tasks-header-show-all" |
         "tasks-view-board-button" |
         "tasks-view-list-button" |
         "this-is-the-element" |
@@ -528,6 +559,7 @@ declare namespace DataCy {
         "top-banner-content" |
         "top-banner-dismiss-button" |
         "transfer-project-apply-button" |
+        "translation-agency-item" |
         "translation-create-description-input" |
         "translation-create-key-input" |
         "translation-create-namespace-input" |
@@ -579,6 +611,7 @@ declare namespace DataCy {
         "translations-select-all-button" |
         "translations-shortcuts-command" |
         "translations-state-filter" |
+        "translations-state-filter-clear" |
         "translations-state-filter-option" |
         "translations-state-indicator" |
         "translations-table-cell" |

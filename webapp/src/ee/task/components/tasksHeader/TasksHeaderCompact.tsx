@@ -7,9 +7,16 @@ import {
   IconButton,
   styled,
   SxProps,
+  Tooltip,
 } from '@mui/material';
 import { useDebounceCallback } from 'usehooks-ts';
-import { FilterLines, Plus, SearchSm, XClose } from '@untitled-ui/icons-react';
+import {
+  FilterLines,
+  Plus,
+  SearchSm,
+  ShoppingCart01,
+  XClose,
+} from '@untitled-ui/icons-react';
 import { useTranslate } from '@tolgee/react';
 
 import { LabelHint } from 'tg.component/common/LabelHint';
@@ -54,10 +61,11 @@ type Props = {
   sx?: SxProps;
   className?: string;
   onSearchChange: (value: string) => void;
-  showClosed: boolean;
-  onShowClosedChange: (value: boolean) => void;
+  showAll: boolean;
+  onShowAllChange: (value: boolean) => void;
   filter: TaskFilterType;
   onFilterChange: (value: TaskFilterType) => void;
+  onOrderTranslation?: () => void;
   onAddTask?: () => void;
   view: TaskView;
   onViewChange: (view: TaskView) => void;
@@ -68,8 +76,9 @@ export const TasksHeaderCompact = ({
   sx,
   className,
   onSearchChange,
-  showClosed,
-  onShowClosedChange,
+  showAll,
+  onShowAllChange,
+  onOrderTranslation,
   filter,
   onFilterChange,
   onAddTask,
@@ -120,7 +129,7 @@ export const TasksHeaderCompact = ({
         </StyledSearchSpaced>
       ) : (
         <>
-          <Box sx={{ display: 'flex', gap: '8px' }}>
+          <Box sx={{ display: 'grid', gap: '8px', gridAutoFlow: 'column' }}>
             <Badge
               color="primary"
               badgeContent={localSearch.length}
@@ -158,21 +167,31 @@ export const TasksHeaderCompact = ({
               />
             )}
             <FormControlLabel
-              checked={showClosed}
-              onChange={() => onShowClosedChange(!showClosed)}
+              checked={showAll}
+              onChange={() => onShowAllChange(!showAll)}
               control={<Checkbox size="small" />}
-              sx={{ pl: 1 }}
+              sx={{ pl: 1, overflow: 'hidden' }}
               label={
-                <Box display="flex">
-                  {t('tasks_show_closed_label')}
-                  <LabelHint title={t('tasks_show_closed_label_tooltip')}>
+                <Box display="flex" whiteSpace="nowrap">
+                  {t('tasks_show_all_label')}
+                  <LabelHint title={t('tasks_show_all_label_tooltip')}>
                     <span />
                   </LabelHint>
                 </Box>
               }
             />
           </Box>
-          <Box sx={{ display: 'flex', gap: '16px' }}>
+          <Box sx={{ display: 'flex' }}>
+            {onOrderTranslation && (
+              <Tooltip
+                title={t('tasks_order_translation_tooltip')}
+                disableInteractive
+              >
+                <IconButton color="primary" onClick={onOrderTranslation}>
+                  <ShoppingCart01 />
+                </IconButton>
+              </Tooltip>
+            )}
             {onAddTask && (
               <IconButton color="primary" onClick={onAddTask}>
                 <Plus />

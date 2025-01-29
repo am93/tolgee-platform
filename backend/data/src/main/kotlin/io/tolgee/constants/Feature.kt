@@ -19,4 +19,14 @@ enum class Feature {
   AI_PROMPT_CUSTOMIZATION,
   SLACK_INTEGRATION,
   TASKS,
+  SSO,
+  ORDER_TRANSLATION,
+
+  ;
+
+  companion object {
+    fun findByName(name: String): Feature? {
+      return entries.find { it.name == name }
+    }
+  }
 }

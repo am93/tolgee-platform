@@ -77,6 +77,7 @@ describe('project tasks', () => {
     cy.gcy('create-task-field-description').type(
       'This is task description ...'
     );
+    cy.gcy('translations-state-filter-clear').click();
     getTaskPreview('Czech').findDcy('assignee-select').click();
     cy.gcy('assignee-search-select-popover')
       .contains('Organization member')
@@ -114,9 +115,9 @@ describe('project tasks', () => {
     cy.gcy('tasks-header-add-task').click();
     cy.gcy('create-task-field-languages').click();
     cy.gcy('create-task-field-languages-item').contains('Czech').click();
-    cy.gcy('create-task-field-languages-item').contains('English').click();
     dismissMenu();
     cy.waitForDom();
+    cy.gcy('translations-state-filter-clear').click();
 
     checkTaskPreview({
       language: 'Czech',
@@ -124,13 +125,6 @@ describe('project tasks', () => {
       alert: false,
       words: 8,
       characters: 52,
-    });
-    checkTaskPreview({
-      language: 'English',
-      keys: 2,
-      alert: true,
-      words: 4,
-      characters: 26,
     });
   });
 
@@ -143,6 +137,8 @@ describe('project tasks', () => {
     cy.gcy('create-task-field-languages-item').contains('English').click();
     dismissMenu();
     cy.waitForDom();
+    cy.gcy('translations-state-filter-clear').click();
+    waitForGlobalLoading();
 
     checkTaskPreview({
       language: 'Czech',
@@ -164,27 +160,52 @@ describe('project tasks', () => {
     cy.gcy('tasks-header-add-task').click();
     cy.gcy('create-task-field-languages').click();
     cy.gcy('create-task-field-languages-item').contains('Czech').click();
-    cy.gcy('create-task-field-languages-item').contains('English').click();
+    dismissMenu();
+    cy.waitForDom();
+    cy.gcy('translations-state-filter-clear').click();
+    waitForGlobalLoading();
+
+    checkTaskPreview({
+      language: 'Czech',
+      keys: 4,
+      alert: false,
+      words: 8,
+      characters: 52,
+    });
+  });
+
+  it('wont allow creation of empty task', () => {
+    cy.gcy('tasks-header-add-task').click();
+    cy.gcy('create-task-field-name').click().type('new task');
+    cy.gcy('create-task-field-languages').click();
+    cy.gcy('create-task-field-languages-item').contains('Czech').click();
     dismissMenu();
 
+    cy.gcy('translations-state-filter-clear').click();
     cy.gcy('translations-state-filter').click();
-    cy.gcy('translations-state-filter-option').contains('Untranslated').click();
+    cy.gcy('translations-state-filter-option').contains('Outdated').click();
+
     dismissMenu();
     cy.waitForDom();
 
     checkTaskPreview({
       language: 'Czech',
-      keys: 2,
-      alert: false,
-      words: 4,
-      characters: 26,
-    });
-    checkTaskPreview({
-      language: 'English',
       keys: 0,
       alert: false,
       words: 0,
       characters: 0,
     });
+
+    cy.gcy('create-task-submit').click();
+    cy.gcy('empty-scope-dialog').should('be.visible');
+  });
+
+  it('uses default state filters', () => {
+    cy.gcy('tasks-header-add-task').click();
+    cy.gcy('translations-state-filter').contains('Untranslated');
+    cy.gcy('create-task-field-type').click();
+    cy.gcy('create-task-field-type-item').contains('Review').click();
+
+    cy.gcy('translations-state-filter').contains('Translated');
   });
 });

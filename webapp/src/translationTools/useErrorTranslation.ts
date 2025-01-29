@@ -129,6 +129,32 @@ export function useErrorTranslation() {
         return t('verify_email_verification_code_not_valid');
       case 'user_is_subscribed_to_paid_plan':
         return t('user_is_subscribed_to_paid_plan');
+      case 'sso_token_exchange_failed':
+        return t('sso_token_exchange_failed');
+      case 'sso_user_info_retrieval_failed':
+        return t('sso_user_info_retrieval_failed');
+      case 'sso_id_token_expired':
+        return t('sso_id_token_expired');
+      case 'sso_user_cannot_create_organization':
+        return t('sso_user_cannot_create_organization');
+      case 'sso_cant_verify_user':
+        return t('sso_cant_verify_user');
+      case 'sso_auth_missing_domain':
+        return t('sso_auth_missing_domain');
+      case 'sso_domain_not_found_or_disabled':
+        return t('sso_domain_not_found_or_disabled');
+      case 'native_authentication_disabled':
+        return t('native_authentication_disabled');
+      case 'invitation_organization_mismatch':
+        return t('invitation_organization_mismatch');
+      case 'user_is_managed_by_organization':
+        return t('user_is_managed_by_organization');
+      case 'cannot_set_sso_provider_missing_fields':
+        return t('cannot_set_sso_provider_missing_fields');
+      case 'namespace_cannot_be_used_when_feature_is_disabled':
+        return t('namespace_cannot_be_used_when_feature_is_disabled');
+      case 'namespaces_cannot_be_disabled_when_namespace_exists':
+        return t('namespaces_cannot_be_disabled_when_namespace_exists');
       default:
         return code;
     }

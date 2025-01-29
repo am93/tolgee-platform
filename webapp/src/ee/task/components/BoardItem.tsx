@@ -2,21 +2,20 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useTranslate } from '@tolgee/react';
 import { Box, IconButton, styled, Tooltip } from '@mui/material';
-import { AlarmClock, DotsVertical } from '@untitled-ui/icons-react';
+import { AlarmClock, DotsVertical, InfoCircle } from '@untitled-ui/icons-react';
 
 import { stopAndPrevent } from 'tg.fixtures/eventHandler';
 import { Scope } from 'tg.fixtures/permissions';
 import { components } from 'tg.service/apiSchema.generated';
 import { useDateFormatter } from 'tg.hooks/useLocale';
-import { TaskDetail } from 'tg.component/CustomIcons';
 import { BatchProgress } from 'tg.views/projects/translations/BatchOperations/OperationsSummary/BatchProgress';
 
 import { TaskLabel } from './TaskLabel';
 import { TaskMenu } from './TaskMenu';
-import { TaskTypeChip } from './TaskTypeChip';
-import { TaskState } from './TaskState';
+import { TaskTypeChip } from 'tg.component/task/TaskTypeChip';
+import { TaskState } from 'tg.component/task/TaskState';
 import { TaskAssignees } from './TaskAssignees';
-import { getTaskRedirect } from './utils';
+import { getTaskUrl } from './utils';
 
 type TaskModel = components['schemas']['TaskModel'];
 type SimpleProjectModel = components['schemas']['SimpleProjectModel'];
@@ -87,7 +86,7 @@ export const BoardItem = ({
     <StyledContainer
       component={Link}
       // @ts-ignore
-      to={getTaskRedirect(project, task.number)}
+      to={getTaskUrl(project, task.number)}
     >
       <StyledRow>
         <TaskLabel task={task} hideType />
@@ -104,7 +103,7 @@ export const BoardItem = ({
               size="small"
               onClick={stopAndPrevent(() => onDetailOpen(task))}
             >
-              <TaskDetail />
+              <InfoCircle />
             </IconButton>
           </Tooltip>
           <IconButton
@@ -135,7 +134,7 @@ export const BoardItem = ({
       </StyledRow>
       <StyledRow>
         <StyledSecondaryItem>
-          {t('task_keys_count', { value: task.totalItems })}
+          {t('task_word_count', { value: task.baseWordCount })}
         </StyledSecondaryItem>
         <StyledSecondaryItem>
           {task.dueDate ? (

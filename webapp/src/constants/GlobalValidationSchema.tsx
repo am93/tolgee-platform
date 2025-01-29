@@ -270,7 +270,12 @@ export class Validation {
           ? Yup.string()
               .email(t('validation_email_is_not_valid'))
               .required(t('Validation - required field'))
-          : Yup.string().required(t('Validation - required field'))
+          : val === 'link'
+          ? Yup.string().required(t('Validation - required field'))
+          : Yup.string()
+      ),
+      agency: Yup.number().when('type', (val: string) =>
+        val === 'agency' ? Yup.string().required() : Yup.string()
       ),
     });
 
@@ -412,6 +417,43 @@ export class Validation {
   static readonly UPDATE_TASK_FORM = (t: TranslateFunction) =>
     Yup.object().shape({
       name: Yup.string().min(3).required(),
+    });
+
+  private static readonly validateUrlWithPort = (
+    value: string | undefined
+  ): boolean => {
+    if (!value) return false;
+    const urlPattern = /^(http|https):\/\/[\w.-]+(:\d+)?(\/[^\s]*)?$/;
+    return urlPattern.test(value);
+  };
+
+  static readonly SSO_PROVIDER = (t: TranslateFunction) =>
+    Yup.object().shape({
+      clientId: Yup.string().required().max(255),
+      domain: Yup.string().required().max(255),
+      clientSecret: Yup.string().required().max(255),
+      authorizationUri: Yup.string()
+        .required()
+        .max(255)
+        .test(
+          'is-valid-url-with-port',
+          t('sso_invalid_url_format'),
+          Validation.validateUrlWithPort
+        ),
+      tokenUri: Yup.string()
+        .required()
+        .max(255)
+        .test(
+          'is-valid-url-with-port',
+          t('sso_invalid_url_format'),
+          Validation.validateUrlWithPort
+        ),
+    });
+
+  static readonly TRANSLATION_AGENCY_FORM = () =>
+    Yup.object().shape({
+      name: Yup.string().min(3).required(),
+      email: Yup.string().min(3).required(),
     });
 }
 

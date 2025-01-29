@@ -2,7 +2,6 @@ package io.tolgee.api.v2.controllers
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import io.tolgee.api.EeInvitationService
 import io.tolgee.constants.Message
 import io.tolgee.dtos.misc.CreateOrganizationInvitationParams
 import io.tolgee.dtos.misc.CreateProjectInvitationParams
@@ -11,21 +10,22 @@ import io.tolgee.dtos.request.project.ProjectInviteUserDto
 import io.tolgee.exceptions.BadRequestException
 import io.tolgee.exceptions.NotFoundException
 import io.tolgee.facade.ProjectPermissionFacade
-import io.tolgee.hateoas.invitation.OrganizationInvitationModel
-import io.tolgee.hateoas.invitation.OrganizationInvitationModelAssembler
-import io.tolgee.hateoas.invitation.ProjectInvitationModel
-import io.tolgee.hateoas.invitation.ProjectInvitationModelAssembler
+import io.tolgee.hateoas.invitation.*
 import io.tolgee.model.enums.OrganizationRoleType
 import io.tolgee.model.enums.Scope
 import io.tolgee.security.ProjectHolder
 import io.tolgee.security.authentication.AllowApiAccess
+import io.tolgee.security.authentication.AuthenticationFacade
 import io.tolgee.security.authentication.RequiresSuperAuthentication
 import io.tolgee.security.authorization.RequiresOrganizationRole
 import io.tolgee.security.authorization.RequiresProjectPermissions
-import io.tolgee.service.InvitationService
+import io.tolgee.service.TranslationAgencyService
+import io.tolgee.service.invitation.EeInvitationService
+import io.tolgee.service.invitation.InvitationService
 import io.tolgee.service.organization.OrganizationRoleService
 import io.tolgee.service.organization.OrganizationService
 import io.tolgee.service.project.ProjectService
+import io.tolgee.service.security.PermissionService
 import io.tolgee.service.security.SecurityService
 import jakarta.validation.Valid
 import org.springframework.hateoas.CollectionModel
@@ -53,6 +53,10 @@ class V2InvitationController(
   private val eeInvitationService: EeInvitationService,
   private val organizationService: OrganizationService,
   private val organizationInvitationModelAssembler: OrganizationInvitationModelAssembler,
+  private val permissionService: PermissionService,
+  private val authenticationFacade: AuthenticationFacade,
+  private val translationAgencyService: TranslationAgencyService,
+  private val publicInvitationModelAssembler: PublicInvitationModelAssembler,
 ) {
   @GetMapping("/v2/invitations/{code}/accept")
   @Operation(summary = "Accepts invitation to project or organization")
@@ -109,18 +113,37 @@ class V2InvitationController(
     invitation: ProjectInviteUserDto,
   ): ProjectInvitationModel {
     validatePermissions(invitation)
+    val currentUserPermissions =
+      permissionService.findPermissionNonCached(
+        projectHolder.project.id,
+        authenticationFacade.authenticatedUser.id,
+      )
 
     val languagesPermissions = projectPermissionFacade.getLanguages(invitation, projectHolder.project.id)
 
     val params =
-      CreateProjectInvitationParams(
-        project = projectHolder.projectEntity,
-        type = invitation.type,
-        scopes = invitation.scopes,
-        email = invitation.email,
-        name = invitation.name,
-        languagePermissions = languagesPermissions,
-      )
+      if (invitation.agencyId != null) {
+        val agency = translationAgencyService.findById(invitation.agencyId!!)
+        CreateProjectInvitationParams(
+          project = projectHolder.projectEntity,
+          type = invitation.type,
+          scopes = invitation.scopes,
+          email = agency.email,
+          name = "Agency invitation",
+          languagePermissions = languagesPermissions,
+          agencyId = agency.id,
+        )
+      } else {
+        CreateProjectInvitationParams(
+          project = projectHolder.projectEntity,
+          type = invitation.type,
+          scopes = invitation.scopes,
+          email = invitation.email,
+          name = invitation.name,
+          languagePermissions = languagesPermissions,
+          agencyId = currentUserPermissions?.agency?.id,
+        )
+      }
 
     val created =
       if (!params.scopes.isNullOrEmpty()) {

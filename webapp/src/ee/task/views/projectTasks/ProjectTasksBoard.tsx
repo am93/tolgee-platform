@@ -1,7 +1,7 @@
 import { useProject } from 'tg.hooks/useProject';
 import { components, operations } from 'tg.service/apiSchema.generated';
-import { TaskFilterType } from 'tg.ee/task/components/taskFilter/TaskFilterPopover';
-import { TasksBoard } from 'tg.ee/task/components/TasksBoard';
+import { TaskFilterType } from 'tg.ee.module/task/components/taskFilter/TaskFilterPopover';
+import { TasksBoard } from 'tg.ee.module/task/components/TasksBoard';
 
 import { useProjectBoardTasks } from './useProjectBoardTasks';
 
@@ -9,14 +9,14 @@ type TaskModel = components['schemas']['TaskModel'];
 type QueryParameters = operations['getTasks_1']['parameters']['query'];
 
 type Props = {
-  showClosed: boolean;
+  showAll: boolean;
   filter: TaskFilterType;
   onOpenDetail: (task: TaskModel) => void;
   search: string;
 };
 
 export const ProjectTasksBoard = ({
-  showClosed,
+  showAll,
   filter,
   onOpenDetail,
   search,
@@ -30,6 +30,7 @@ export const ProjectTasksBoard = ({
     filterAssignee: filter.assignees,
     filterLanguage: filter.languages,
     filterType: filter.types,
+    filterAgency: filter.agencies,
   } satisfies QueryParameters;
 
   const newTasks = useProjectBoardTasks({
@@ -46,14 +47,14 @@ export const ProjectTasksBoard = ({
     projectId: project.id,
     query: {
       ...query,
-      filterState: showClosed ? ['DONE', 'CLOSED'] : ['DONE'],
-      filterDoneMinClosedAt: filter.doneMinClosedAt,
+      filterState: ['DONE', 'CLOSED'],
+      filterNotClosedBefore: filter.filterNotClosedBefore,
     },
   });
 
   return (
     <TasksBoard
-      showClosed={showClosed}
+      showAll={showAll}
       onOpenDetail={onOpenDetail}
       doneTasks={doneTasks}
       inProgressTasks={inProgressTasks}

@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslate } from '@tolgee/react';
 import { Box, IconButton, styled, Tooltip, useTheme } from '@mui/material';
-import { AlarmClock, DotsVertical } from '@untitled-ui/icons-react';
+import { AlarmClock, DotsVertical, InfoCircle } from '@untitled-ui/icons-react';
 
-import { TaskDetail } from 'tg.component/CustomIcons';
 import { components } from 'tg.service/apiSchema.generated';
 import { BatchProgress } from 'tg.views/projects/translations/BatchOperations/OperationsSummary/BatchProgress';
 import { useDateFormatter } from 'tg.hooks/useLocale';
@@ -12,10 +11,10 @@ import { AvatarImg } from 'tg.component/common/avatar/AvatarImg';
 import { Scope } from 'tg.fixtures/permissions';
 import { TaskMenu } from './TaskMenu';
 import { TaskLabel } from './TaskLabel';
-import { getTaskRedirect } from './utils';
-import { TaskState } from './TaskState';
+import { TaskState } from 'tg.component/task/TaskState';
 import { stopAndPrevent } from 'tg.fixtures/eventHandler';
 import { TaskAssignees } from './TaskAssignees';
+import { getTaskUrl } from './utils';
 
 type TaskModel = components['schemas']['TaskModel'];
 type SimpleProjectModel = components['schemas']['SimpleProjectModel'];
@@ -81,7 +80,7 @@ export const TaskItem = ({
 
   const linkProps = {
     component: Link,
-    to: getTaskRedirect(project, task.number),
+    to: getTaskUrl(project, task.number),
   };
 
   return (
@@ -95,7 +94,7 @@ export const TaskItem = ({
         alignItems="center"
         justifyContent="center"
       >
-        {t('task_keys_count', { value: task.totalItems })}
+        {t('task_word_count', { value: task.baseWordCount })}
       </StyledItem>
       <StyledProgress {...linkProps}>
         {task.state === 'IN_PROGRESS' ? (
@@ -137,16 +136,18 @@ export const TaskItem = ({
             onClick={stopAndPrevent(() => onDetailOpen(task))}
             data-cy="task-item-detail"
           >
-            <TaskDetail />
+            <InfoCircle />
           </IconButton>
         </Tooltip>
-        <IconButton
-          size="small"
-          onClick={stopAndPrevent((e) => setAnchorEl(e.currentTarget))}
-          data-cy="task-item-menu"
-        >
-          <DotsVertical />
-        </IconButton>
+        <Tooltip title={t('task_actions_tooltip')} disableInteractive>
+          <IconButton
+            size="small"
+            onClick={stopAndPrevent((e) => setAnchorEl(e.currentTarget))}
+            data-cy="task-item-menu"
+          >
+            <DotsVertical />
+          </IconButton>
+        </Tooltip>
       </StyledItem>
       <TaskMenu
         anchorEl={anchorEl}

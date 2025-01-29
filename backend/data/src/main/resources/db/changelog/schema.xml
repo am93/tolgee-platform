@@ -3878,4 +3878,185 @@
             <column name="organization_id"/>
         </createIndex>
     </changeSet>
+    <changeSet author="anty (generated)" id="1731342594097-1">
+        <createTable tableName="tenant">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="tenantPK"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP(6) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP(6) WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="authorization_uri" type="VARCHAR(255)"/>
+            <column name="client_id" type="VARCHAR(255)"/>
+            <column name="client_secret" type="VARCHAR(255)"/>
+            <column name="domain" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueBoolean="true" name="enabled" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="token_uri" type="VARCHAR(255)"/>
+            <column name="organization_id" type="BIGINT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="anty (generated)" id="1731342594097-2">
+        <addColumn tableName="organization_role">
+            <column name="managed" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet author="anty (generated)" id="1731342594097-3">
+        <addColumn tableName="user_account">
+            <column name="sso_refresh_token" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="anty (generated)" id="1731342594097-4">
+        <addColumn tableName="user_account">
+            <column name="sso_session_expiry" type="timestamp(6)"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="anty (generated)" id="1731342594097-5">
+        <sql>
+            create unique index on public.tenant (domain) where enabled = true;
+        </sql>
+        <sql>
+            alter table tenant add constraint tenant_domain_not_blank check (enabled = false or (domain is not null and domain != ''));
+        </sql>
+    </changeSet>
+    <changeSet author="anty (generated)" id="1731342594097-6">
+        <addUniqueConstraint columnNames="organization_id" constraintName="UC_TENANTORGANIZATION_ID_COL" tableName="tenant"/>
+    </changeSet>
+    <changeSet author="anty (generated)" id="1731342594097-7">
+        <sql>
+            create unique index organization_member_role_only_one_managed on public.organization_role (user_id) where managed = true;
+        </sql>
+    </changeSet>
+    <changeSet author="anty (generated)" id="1731342594097-8">
+        <addForeignKeyConstraint baseColumnNames="organization_id" baseTableName="tenant" constraintName="FKti8pr42oxjua5ym5d0mdpk2i0" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="organization" validate="true"/>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1729510857586-1">
+        <createTable tableName="translation_agency">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"
+                    primaryKeyName="translation_agencyPK" />
+            </column>
+            <column name="created_at" type="TIMESTAMP(6) WITHOUT TIME ZONE">
+                <constraints nullable="false" />
+            </column>
+            <column name="updated_at" type="TIMESTAMP(6) WITHOUT TIME ZONE">
+                <constraints nullable="false" />
+            </column>
+            <column name="avatar_hash" type="VARCHAR(255)" />
+            <column name="description" type="VARCHAR(255)" />
+            <column name="services" type="JSONB" />
+            <column name="url" type="VARCHAR(255)" />
+        </createTable>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1729510857586-2">
+        <addColumn tableName="task">
+            <column name="agency_id" type="bigint" />
+        </addColumn>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1729510857586-3">
+        <addForeignKeyConstraint baseColumnNames="agency_id" baseTableName="task"
+            constraintName="FKsaa8x1vc3plx26t71br7dpe5v" deferrable="false"
+            initiallyDeferred="false" referencedColumnNames="id"
+            referencedTableName="translation_agency" validate="true" />
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1729516858327-2">
+        <addColumn tableName="translation_agency">
+            <column name="name" type="varchar(255)" />
+        </addColumn>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1729516858327-1">
+        <modifyDataType columnName="description" newDataType="varchar(2000)"
+            tableName="translation_agency" />
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1730216605087-1">
+        <addColumn tableName="translation_agency">
+            <column name="email" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1730298499869-1">
+        <addColumn tableName="permission">
+            <column name="agency_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1730298499869-2">
+        <addForeignKeyConstraint baseColumnNames="agency_id" baseTableName="permission" constraintName="FKmydwc5awkxhqr2d1apki4qrms" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="translation_agency" validate="true"/>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1730382276716-1">
+        <createIndex indexName="IDXicodurrj16g69mh6gle22manw" tableName="task">
+            <column name="agency_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1730382276716-2">
+        <createIndex indexName="IDXpb7w8ehssqjceu0cqotix7201" tableName="permission">
+            <column name="agency_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1732118662212-1">
+        <addColumn tableName="translation_agency">
+            <column name="email_bcc" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1732190627370-1">
+        <addColumn tableName="translation_agency">
+            <column name="deleted_at" type="timestamp(6)"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1733757292979-1">
+        <addColumn tableName="content_delivery_config">
+            <column name="last_published_files" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="jenik" id="1734092854306-1">
+        <addColumn tableName="keys_distance">
+            <column name="distance" type="float(53)" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <!-- Max score was 10000. We want to push all current distances to be sorted in descending order, -->
+        <!-- max distance should be usually greater than 100 -->
+        <sql>
+            update keys_distance
+            set distance = 10100 - score;
+        </sql>
+        <sql>
+            alter table keys_distance
+                alter column score set default 10000;
+        </sql>
+    </changeSet>
+    <changeSet author="stanov (generated)" id="1732537248089-1">
+        <addColumn tableName="project">
+            <column defaultValueBoolean="false" name="use_namespaces" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <sqlFile path="classpath:db/changelog/enableUseNamespacesForProjectsWithNamespaces.sql" splitStatements="false"/>
+    </changeSet>
+    <changeSet author="stanov (generated)" id="1733843923166-1">
+        <addColumn tableName="import_file">
+            <column name="detected_namespace" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1735822703703-1">
+        <addColumn tableName="invitation">
+            <column name="created_by_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1735822703703-2">
+        <addForeignKeyConstraint baseColumnNames="created_by_id" baseTableName="invitation" constraintName="FK2q6wi3un2qq40cgjoln871ak2" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="user_account" validate="true"/>
+    </changeSet>
+    <changeSet author="stepangranat (generated)" id="1737470670674-1">
+        <addColumn tableName="screenshot">
+            <column defaultValueBoolean="false" name="has_middle_sized" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

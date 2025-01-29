@@ -36,6 +36,7 @@ import { useWebsocketService } from './services/useWebsocketService';
 import { PrefilterType } from '../prefilters/usePrefilter';
 import { useTaskService } from './services/useTaskService';
 import { usePositionService } from './services/usePositionService';
+import { useLayoutService } from './services/useLayoutService';
 
 type Props = {
   projectId: number;
@@ -55,6 +56,7 @@ export const [
 ] = createProvider((props: Props) => {
   const [view, setView] = useUrlSearchState('view', { defaultVal: 'LIST' });
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const layout = useLayoutService({ sidePanelOpen });
   const urlLanguages = useUrlSearchArray().languages;
   const requiredLanguages = urlLanguages?.length
     ? urlLanguages
@@ -186,8 +188,11 @@ export const [
         return positionService.updatePosition(edit);
       }
     },
-    toggleSelect(index: number) {
-      return selectionService.toggle(index);
+    toggleSelect(keyId: number) {
+      return selectionService.toggle(keyId);
+    },
+    groupToggleSelect(keyId: number) {
+      return selectionService.groupToggle(keyId);
     },
     async selectAll() {
       const allItems = await translationService.getAllIds();
@@ -210,8 +215,8 @@ export const [
       translationService.updateQuery({});
       return handleTranslationsReset();
     },
-    updateScreenshotCount(count: ChangeScreenshotNum) {
-      return translationService.updateScreenshotCount(count);
+    updateScreenshots(data: ChangeScreenshotNum) {
+      return translationService.updateScreenshots(data);
     },
     changeView(view: ViewMode) {
       return setView(view);
@@ -221,6 +226,9 @@ export const [
     },
     setTaskState(state: SetTaskTranslationState) {
       return taskService.setTaskTranslationState(state);
+    },
+    finishTask(taskNumber: number) {
+      return taskService.finishTask(taskNumber);
     },
     addTag(tag: AddTag) {
       return tagsService.addTag(tag);
@@ -294,8 +302,8 @@ export const [
     view: view as ViewMode,
     elementsRef: viewRefs.elementsRef,
     reactList: viewRefs.reactList,
-    sidePanelOpen,
     prefilter: props.prefilter,
+    layout,
   };
 
   return [state, actions];

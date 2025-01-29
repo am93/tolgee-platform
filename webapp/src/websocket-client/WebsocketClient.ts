@@ -33,16 +33,14 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
 
   let _client: CompatClient | undefined;
   let connected = false;
-  const subscriptions: Subscription<any>[] = [];
+  let subscriptions: Subscription<any>[] = [];
 
   const resubscribe = () => {
-    subscriptions.forEach(() => {
-      if (_client) {
-        subscriptions.forEach((subscription) => {
-          subscribeToStompChannel(subscription);
-        });
-      }
-    });
+    if (_client) {
+      subscriptions.forEach((subscription) => {
+        subscribeToStompChannel(subscription);
+      });
+    }
   };
 
   const subscribeToStompChannel = (subscription) => {
@@ -81,6 +79,7 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
       subscriptions.forEach((s) => {
         s.unsubscribe = undefined;
         s.id = undefined;
+        removeSubscription(s);
       });
       options.onConnectionClose?.();
     };
@@ -90,7 +89,7 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
     };
 
     client.connect(
-      { ...options.authentication },
+      options.authentication.jwtToken ? { ...options.authentication } : null,
       onConnected,
       onError,
       onDisconnect
@@ -122,6 +121,7 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
 
     return () => {
       subscription.unsubscribe?.();
+      removeSubscription(subscription);
     };
   }
 
@@ -129,6 +129,10 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
     if (_client) {
       _client.disconnect();
     }
+  }
+
+  function removeSubscription(subscription: Subscription<any>) {
+    subscriptions = subscriptions.filter((it) => it !== subscription);
   }
 
   return Object.freeze({ subscribe, disconnect });

@@ -10,16 +10,19 @@ import { Validation } from 'tg.constants/GlobalValidationSchema';
 import LoadingButton from 'tg.component/common/form/LoadingButton';
 import { useLeaveProject } from '../useLeaveProject';
 import { TextField } from 'tg.component/common/form/fields/TextField';
+import { Checkbox } from 'tg.component/common/form/fields/Checkbox';
 import { FieldLabel } from 'tg.component/FormField';
-import { Box, styled } from '@mui/material';
+import { Box, FormControlLabel, styled, Typography } from '@mui/material';
 import { ProjectLanguagesProvider } from 'tg.hooks/ProjectLanguagesProvider';
 import { useProjectNamespaces } from 'tg.hooks/useProjectNamespaces';
 import { DefaultNamespaceSelect } from './components/DefaultNamespaceSelect';
+import { useField } from 'formik';
 
 type FormValues = {
   name: string;
   description: string | undefined;
   baseLanguageId: number | undefined;
+  useNamespaces: boolean | false;
   defaultNamespaceId: number | '';
 };
 
@@ -50,12 +53,15 @@ const LanguageSelect = () => {
 };
 
 const NamespaceSelect = () => {
+  const [useNamespacesField] = useField('useNamespaces');
   const { allNamespacesWithNone } = useProjectNamespaces();
+
   return (
     <DefaultNamespaceSelect
       label={<T keyName="project_settings_base_namespace" />}
       name="defaultNamespaceId"
       namespaces={allNamespacesWithNone}
+      hidden={!useNamespacesField.value}
     />
   );
 };
@@ -69,6 +75,7 @@ export const ProjectSettingsGeneral = () => {
     name: project.name,
     baseLanguageId: project.baseLanguage?.id,
     description: project.description ?? '',
+    useNamespaces: project.useNamespaces ?? false,
     defaultNamespaceId: defaultNamespace?.id ?? '',
   } satisfies FormValues;
 
@@ -76,12 +83,16 @@ export const ProjectSettingsGeneral = () => {
     url: '/v2/projects/{projectId}',
     method: 'put',
     invalidatePrefix: '/v2/projects',
+    fetchOptions: {
+      disableErrorNotification: true,
+    },
   });
 
   const updateProjectSettings = (values: FormValues) => {
     const data = {
       ...values,
       description: values.description || undefined,
+      useNamespaces: values.useNamespaces || false,
       defaultNamespaceId:
         values.defaultNamespaceId === 0 ? undefined : values.defaultNamespaceId,
     };
@@ -110,56 +121,87 @@ export const ProjectSettingsGeneral = () => {
       <Box gridArea="avatar">
         <ProjectProfileAvatar />
       </Box>
-      <StandardForm
-        validationSchema={Validation.PROJECT_SETTINGS}
-        initialValues={initialValues}
-        onSubmit={handleEdit}
-        saveActionLoadable={updateLoadable}
-        hideCancel
-        customActions={
-          <LoadingButton
-            data-cy="project-delete-button"
-            color="secondary"
-            variant="outlined"
-            onClick={() => leave(project.name, project.id)}
-            loading={isLeaving}
-          >
-            <T keyName="project_leave_button" />
-          </LoadingButton>
-        }
-      >
-        <Box gridArea="fields" display="grid" gap={2} mb={4}>
-          <Box>
-            <FieldLabel>
-              <T keyName="project_settings_name_label" />
-            </FieldLabel>
-            <TextField
-              size="small"
-              name="name"
-              required={true}
-              data-cy="project-settings-name"
-              sx={{ mt: 0 }}
-            />
+      <Box gridArea="fields">
+        <StandardForm
+          validationSchema={Validation.PROJECT_SETTINGS}
+          initialValues={initialValues}
+          onSubmit={handleEdit}
+          saveActionLoadable={updateLoadable}
+          hideCancel
+          customActions={
+            <LoadingButton
+              data-cy="project-delete-button"
+              color="secondary"
+              variant="outlined"
+              onClick={() => leave(project.name, project.id)}
+              loading={isLeaving}
+            >
+              <T keyName="project_leave_button" />
+            </LoadingButton>
+          }
+        >
+          <Box display="grid" gap={2} mb={4}>
+            <Box>
+              <FieldLabel>
+                <T keyName="project_settings_name_label" />
+              </FieldLabel>
+              <TextField
+                size="small"
+                name="name"
+                required={true}
+                data-cy="project-settings-name"
+                sx={{ mt: 0 }}
+              />
+            </Box>
+            <Box>
+              <FieldLabel>
+                <T keyName="project_settings_description_label" />
+              </FieldLabel>
+              <TextField
+                size="small"
+                minRows={2}
+                multiline
+                name="description"
+                data-cy="project-settings-description"
+                sx={{ mt: 0 }}
+              />
+            </Box>
+            <ProjectLanguagesProvider>
+              <LanguageSelect />
+            </ProjectLanguagesProvider>
+            <Box display="grid">
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="useNamespaces"
+                    disabled={updateLoadable.isLoading}
+                  />
+                }
+                label={<T keyName="project_settings_use_namespaces" />}
+                data-cy="project-settings-use-namespaces-checkbox"
+              />
+              <Typography variant="caption">
+                {
+                  <T
+                    keyName="project_settings_use_namespaces_hint"
+                    params={{
+                      a: (
+                        <a
+                          href="https://docs.tolgee.io/js-sdk/namespaces"
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: '#D81B5F' }}
+                        />
+                      ),
+                    }}
+                  />
+                }
+              </Typography>
+            </Box>
+            <NamespaceSelect />
           </Box>
-          <Box>
-            <FieldLabel>
-              <T keyName="project_settings_description_label" />
-            </FieldLabel>
-            <TextField
-              size="small"
-              minRows={2}
-              multiline
-              name="description"
-              data-cy="project-settings-description"
-              sx={{ mt: 0 }}
-            />
-          </Box>
-          <ProjectLanguagesProvider>
-            <LanguageSelect />
-          </ProjectLanguagesProvider>
-          <NamespaceSelect />
-        </Box>
-      </StandardForm>
+        </StandardForm>
+      </Box>
     </StyledContainer>
   );
 };

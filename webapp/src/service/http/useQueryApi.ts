@@ -6,6 +6,7 @@ import {
   UseInfiniteQueryOptions,
   useMutation,
   UseMutationOptions,
+  useQueries,
   useQuery,
   useQueryClient,
   UseQueryOptions,
@@ -22,6 +23,10 @@ import {
   ResponseContent,
 } from './ApiSchemaHttpService';
 
+export type CustomOptions = {
+  noGlobalLoading?: boolean;
+};
+
 export type QueryProps<
   Url extends keyof Paths,
   Method extends keyof Paths[Url],
@@ -30,8 +35,23 @@ export type QueryProps<
   url: Url;
   method: Method;
   fetchOptions?: RequestOptions;
-  options?: UseQueryOptions<ResponseContent<Url, Method, Paths>, ApiError>;
+  options?: UseQueryOptions<ResponseContent<Url, Method, Paths>, ApiError> &
+    CustomOptions;
 } & RequestParamsType<Url, Method, Paths>;
+
+export type QueriesProps<
+  Url extends keyof Paths,
+  Method extends keyof Paths[Url],
+  Paths = paths
+> = {
+  queries: ({
+    url: Url;
+    method: Method;
+  } & RequestParamsType<Url, Method, Paths>)[];
+  fetchOptions?: RequestOptions;
+  options?: UseQueryOptions<ResponseContent<Url, Method, Paths>, ApiError> &
+    CustomOptions;
+};
 
 export type InfiniteQueryProps<
   Url extends keyof Paths,
@@ -44,7 +64,8 @@ export type InfiniteQueryProps<
   options?: UseInfiniteQueryOptions<
     ResponseContent<Url, Method, Paths>,
     ApiError
-  >;
+  > &
+    CustomOptions;
 } & RequestParamsType<Url, Method, Paths>;
 
 type Split<S extends string> = S extends `${infer Prefix}/${infer Rest}`
@@ -66,7 +87,8 @@ export type MutationProps<
     ResponseContent<Url, Method, Paths>,
     ApiError,
     RequestParamsType<Url, Method, Paths>
-  >;
+  > &
+    CustomOptions;
   invalidatePrefix?: Prefix | Prefix[];
 };
 
@@ -115,6 +137,32 @@ export const useApiQuery = <
       options as UseQueryOptions<any, ApiError>,
       Boolean(fetchOptions?.disableAutoErrorHandle)
     )
+  );
+};
+
+export const useApiQueries = <
+  Url extends keyof Paths,
+  Method extends keyof Paths[Url],
+  Paths = paths
+>(
+  props: QueryProps<Url, Method, Paths>[]
+) => {
+  return useQueries(
+    props.map((query) => {
+      const { url, method, fetchOptions, options, ...request } = query;
+      return {
+        queryKey: [url, (request as any)?.path, (request as any)?.query],
+        queryFn: () =>
+          apiSchemaHttpService.schemaRequest<Url, Method, Paths>(url, method, {
+            ...fetchOptions,
+            disableAutoErrorHandle: true,
+          })(request),
+        options: autoErrorHandling(
+          options as UseQueryOptions<any, ApiError>,
+          Boolean(fetchOptions?.disableAutoErrorHandle)
+        ),
+      };
+    })
   );
 };
 

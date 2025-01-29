@@ -54,7 +54,7 @@ describe('Project members', () => {
         visitList();
         enterProjectSettings('Facebook itself', 'Facebook');
         selectInProjectMenu('Members');
-        gcy('global-list-search').find('input').type('Doe');
+        gcy('global-search-field').find('input').type('Doe');
 
         gcy('project-member-item')
           .should('have.length', 1)
@@ -117,13 +117,16 @@ describe('Project members', () => {
 
   describe('Modifying access', () => {
     let info: ProjectInfo;
-    beforeEach(async () => {
-      info = await visitProjectWithPermissions(
+    beforeEach(() => {
+      visitProjectWithPermissions(
         {
           scopes: ['activity.view'],
         },
+        true,
         'admin@admin.com'
-      );
+      ).then((infoData) => {
+        info = infoData;
+      });
     });
 
     it('selects Translate role for the user', () => {
@@ -140,6 +143,7 @@ describe('Project members', () => {
         checkPermissions(info, {
           'project-menu-item-dashboard': RUN,
           'project-menu-item-translations': RUN,
+          'project-menu-item-tasks': RUN,
           'project-menu-item-import': RUN,
           'project-menu-item-export': RUN,
           'project-menu-item-integrate': RUN,
@@ -164,6 +168,7 @@ describe('Project members', () => {
         checkPermissions(info, {
           'project-menu-item-dashboard': RUN,
           'project-menu-item-translations': RUN,
+          'project-menu-item-tasks': RUN,
           'project-menu-item-import': RUN,
           'project-menu-item-export': RUN,
           'project-menu-item-integrate': RUN,

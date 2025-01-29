@@ -102,7 +102,7 @@ dependencies {
     testImplementation(libs.azureBlob) {
         exclude group: 'io.netty', module: 'netty-codec-http'
     }
-    testImplementation('io.netty:netty-codec-http:4.1.108.Final')
+    testImplementation('io.netty:netty-codec-http:4.1.115.Final')
 
 
     /**
@@ -140,7 +140,7 @@ dependencies {
     /**
      * Conditional billing module
      */
-    if (rootProject.project(":billing-app").projectDir.exists()) {
+    if (gradle.ext.billingAppDirectory.exists()) {
         implementation(project(':billing-app'))
     }
 
@@ -162,8 +162,9 @@ dependencies {
     /**
      * EE MODULE
      */
-    implementation(project(':ee-app'))
-
+    if (gradle.ext.eeAppDirectoryExists) {
+        implementation(project(':ee-app'))
+    }
 
     /**
      * Dev module
@@ -227,6 +228,15 @@ tasks.register('runWebsocketTests', Test) {
     outputs.upToDateWhen { false }
     useJUnitPlatform {
         includeTags "websocket"
+    }
+    maxHeapSize = "4096m"
+    setTestRetry(it)
+}
+
+tasks.register('runWithoutEeTests', Test) {
+    outputs.upToDateWhen { false }
+    useJUnitPlatform {
+        includeTags "withoutEe"
     }
     maxHeapSize = "4096m"
     setTestRetry(it)

@@ -15,7 +15,7 @@ import {
   useIsAdmin,
   usePreferredOrganization,
 } from 'tg.globalContext/helpers';
-import { Usage } from 'tg.component/billing/Usage';
+import { Usage } from 'tg.ee';
 
 type OrganizationModel = components['schemas']['OrganizationModel'];
 
@@ -76,6 +76,12 @@ export const BaseOrganizationSettingsView: React.FC<Props> = ({
         [PARAMS.ORGANIZATION_SLUG]: organizationSlug,
       }),
       label: t('organization_menu_apps'),
+    });
+    menuItems.push({
+      link: LINKS.ORGANIZATION_SSO.build({
+        [PARAMS.ORGANIZATION_SLUG]: organizationSlug,
+      }),
+      label: t('organization_menu_sso_login'),
     });
     if (config.billing.enabled) {
       menuItems.push({

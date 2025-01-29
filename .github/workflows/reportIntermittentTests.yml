@@ -2,12 +2,12 @@ name: Report intermittent E2E Tests
 
 on:
   schedule:
-    - cron: '42 04 * * *'
+    - cron: "42 04 * * *"
 
 jobs:
   backend-build:
     name: Build backend 🏗️
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
 
@@ -19,7 +19,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: "22.x"
 
       - name: Cache Gradle packages
         uses: actions/cache@v3
@@ -47,7 +47,7 @@ jobs:
       - name: Tar Deployment build
         run: tar -czf ~/backend-development.tgz ./backend/development/build
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: backend
@@ -60,7 +60,7 @@ jobs:
   backend-test:
     name: BT ‍🔎
     needs: [backend-build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -86,7 +86,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: "22.x"
 
       - name: Cache Gradle packages
         uses: actions/cache@v3
@@ -97,7 +97,7 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
 
       - name: Download backend build result
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: backend
           path: ~/
@@ -121,20 +121,29 @@ jobs:
 
       - name: Get report name
         id: reportName
+        if: always()
         run: |
           reportName=${{ matrix.command }}
           echo "reportName=${reportName//\:/_}" >> $GITHUB_OUTPUT
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: backend_test_reports_${{ steps.version.outputs.reportName }}
+          name: backend_test_reports_${{ steps.reportName.outputs.reportName }}
           path: |
             ./**/build/reports/**/*
 
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Test report for ${{ matrix.command }}
+          path: "**/build/test-results/**/TEST-*.xml"
+          reporter: java-junit
+
   e2e:
-    needs: [ frontend-build, backend-build, e2e-install-deps ]
-    runs-on: ubuntu-latest
+    needs: [frontend-build, backend-build, e2e-install-deps]
+    runs-on: ubuntu-24.04
     name: E2E testing ‍🔎
     strategy:
       fail-fast: false
@@ -152,7 +161,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: "22.x"
 
       - name: Cache Gradle packages
         uses: actions/cache@v3
@@ -169,7 +178,7 @@ jobs:
           key: cache-node-modules-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
 
       - name: Download backend build result
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: backend
           path: ~/
@@ -178,13 +187,13 @@ jobs:
         run: tar -xzf ~/backend-app.tgz ./backend/app/build
 
       - name: Download frontend build result
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: webapp
           path: ./webapp/dist
 
       - name: Download dependencies
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: e2e_deps
           path: ~/
@@ -216,7 +225,7 @@ jobs:
           E2E_TOTAL_JOBS: ${{matrix.total_jobs}}
           E2E_JOB_INDEX: ${{matrix.job_index}}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: e2e ${{ matrix.job_index }}
@@ -226,7 +235,7 @@ jobs:
 
   frontend-build:
     name: Build frontend 🏗️
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
 
@@ -246,7 +255,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: "22.x"
 
       - name: Cache node modules
         uses: actions/cache@v3
@@ -261,21 +270,21 @@ jobs:
           TOLGEE_API_URL: ${{secrets.TOLGEE_API_URL}}
 
       - name: Upload built webapp
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: webapp
           path: webapp/build
 
   e2e-install-deps:
     name: Install E2E dependencies ⬇️
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
 
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: "22.x"
 
       - name: Cache node modules
         uses: actions/cache@v3
@@ -296,7 +305,7 @@ jobs:
           tar -czf ~/cypress_cache.tgz ./Cypress
         working-directory: /home/runner/.cache/
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: e2e_deps
@@ -306,9 +315,9 @@ jobs:
 
   cleanup:
     if: always()
-    needs: [ e2e ]
+    needs: [e2e]
     name: Delete artifacts 🧹
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: geekyeggo/delete-artifact@v1
         with:
@@ -316,4 +325,3 @@ jobs:
             e2e_deps
             webapp
             backend
-

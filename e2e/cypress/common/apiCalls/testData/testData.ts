@@ -6,6 +6,10 @@ import { components } from '../../../../../webapp/src/service/apiSchema.generate
 export type PermissionModelScopes =
   components['schemas']['PermissionModel']['scopes'];
 
+export const ssoOrganizationsLoginTestData = generateTestDataObject(
+  'sso-organizations-login'
+);
+
 export const organizationTestData = generateTestDataObject('organizations');
 
 export const organizationNewTestData =
@@ -122,13 +126,14 @@ export type PermissionsOptions = {
 };
 
 export const generatePermissionsData = {
-  generate: (options: Partial<PermissionsOptions>) => {
+  generate: (options: Partial<PermissionsOptions>, useNamespaces = false) => {
     const params = new URLSearchParams();
     Object.entries(options).forEach(([key, values]) => {
       values.forEach((value) => {
         params.append(key, value);
       });
     });
+    params.append('useNamespaces', String(useNamespaces));
     return internalFetch(
       `e2e-data/permissions/generate-with-user?${params.toString()}`
     );

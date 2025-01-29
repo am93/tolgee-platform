@@ -4,7 +4,7 @@ import { useTaskStateTranslation } from 'tg.translationTools/useTaskStateTransla
 import { Scope } from 'tg.fixtures/permissions';
 
 import { BoardItem } from './BoardItem';
-import { useStateColor } from './TaskState';
+import { useStateColor } from 'tg.component/task/TaskState';
 
 type TaskModel = components['schemas']['TaskModel'];
 type TaskWithProjectModel = components['schemas']['TaskWithProjectModel'];
@@ -19,13 +19,21 @@ const StyledColumn = styled(Box)`
 `;
 
 const StyledColumnTitle = styled(Box)`
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
   justify-content: center;
   align-items: center;
   gap: 8px;
   text-transform: uppercase;
   font-size: 15px;
   font-weight: 500;
+`;
+
+const StyledTitleText = styled(Box)`
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 `;
 
 const StyledEmptyMessage = styled(Box)`
@@ -67,10 +75,12 @@ export const BoardColumn = ({
   return (
     <StyledColumn>
       <StyledColumnTitle>
-        {title ??
-          (state && (
-            <Box color={stateColor(state)}>{translateState(state)}</Box>
-          ))}
+        <StyledTitleText>
+          {title ??
+            (state && (
+              <Box color={stateColor(state)}>{translateState(state)}</Box>
+            ))}
+        </StyledTitleText>
         <Chip label={total} size="small" />
       </StyledColumnTitle>
 

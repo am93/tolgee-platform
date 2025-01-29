@@ -1,7 +1,10 @@
-import { ListProps, PaperProps, styled } from '@mui/material';
+import { Box, ListProps, PaperProps, styled } from '@mui/material';
+import { useTranslate } from '@tolgee/react';
+import { DisabledFeatureBanner } from 'tg.component/common/DisabledFeatureBanner';
 import { PaginatedHateoasList } from 'tg.component/common/list/PaginatedHateoasList';
-import { TaskFilterType } from 'tg.ee/task/components/taskFilter/TaskFilterPopover';
-import { TaskItem } from 'tg.ee/task/components/TaskItem';
+import { TaskFilterType } from 'tg.ee.module/task/components/taskFilter/TaskFilterPopover';
+import { TaskItem } from 'tg.ee.module/task/components/TaskItem';
+import { useEnabledFeatures } from 'tg.globalContext/helpers';
 import { useUrlSearchState } from 'tg.hooks/useUrlSearchState';
 import { components } from 'tg.service/apiSchema.generated';
 import { useApiQuery } from 'tg.service/http/useQueryApi';
@@ -15,19 +18,22 @@ const StyledSeparator = styled('div')`
 `;
 
 type Props = {
-  showClosed: boolean;
+  showAll: boolean;
   filter: TaskFilterType;
   onOpenDetail: (task: TaskWithProjectModel) => void;
   search: string;
 };
 
 export const MyTasksList = ({
-  showClosed,
+  showAll,
   filter,
   search,
   onOpenDetail,
 }: Props) => {
+  const { t } = useTranslate();
   const [page, setPage] = useUrlSearchState('page', { defaultVal: '0' });
+  const { isEnabled } = useEnabledFeatures();
+  const tasksFeature = isEnabled('TASKS');
 
   const tasksLoadable = useApiQuery({
     url: '/v2/user-tasks',
@@ -37,15 +43,26 @@ export const MyTasksList = ({
       page: Number(page),
       search,
       sort: ['number,desc'],
-      filterNotState: showClosed ? undefined : ['CLOSED'],
       filterProject: filter.projects,
       filterType: filter.types,
-      filterDoneMinClosedAt: filter.doneMinClosedAt,
+      filterNotClosedBefore: filter.filterNotClosedBefore,
+      filterAgency: filter.agencies,
     },
     options: {
       keepPreviousData: true,
     },
   });
+
+  const allReady = tasksLoadable.isFetched;
+  const allEmpty = tasksLoadable.data?.page?.totalElements === 0;
+
+  if (allReady && allEmpty && !tasksFeature) {
+    return (
+      <Box>
+        <DisabledFeatureBanner customMessage={t('tasks_feature_description')} />
+      </Box>
+    );
+  }
 
   return (
     <PaginatedHateoasList

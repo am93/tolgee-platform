@@ -61,6 +61,7 @@ export enum PARAMS {
   ORGANIZATION_SLUG = 'slug',
   TRANSLATION_ID = 'translationId',
   PLAN_ID = 'planId',
+  TA_ID = 'taId',
 }
 
 export class LINKS {
@@ -78,6 +79,8 @@ export class LINKS {
     LINKS.LOGIN,
     'auth_callback/' + p(PARAMS.SERVICE_TYPE)
   );
+
+  static SSO_LOGIN = Link.ofRoot('sso');
 
   static EMAIL_VERIFICATION = Link.ofParent(
     LINKS.LOGIN,
@@ -181,6 +184,21 @@ export class LINKS {
     'ee-license'
   );
 
+  static ADMINISTRATION_EE_TA = Link.ofParent(
+    LINKS.ADMINISTRATION,
+    'ee-translation-agencies'
+  );
+
+  static ADMINISTRATION_EE_TA_CREATE = Link.ofParent(
+    LINKS.ADMINISTRATION_EE_TA,
+    'create'
+  );
+
+  static ADMINISTRATION_EE_TA_EDIT = Link.ofParent(
+    LINKS.ADMINISTRATION_EE_TA,
+    p(PARAMS.TA_ID) + '/edit'
+  );
+
   static ADMINISTRATION_BILLING_CLOUD_PLANS = Link.ofParent(
     LINKS.ADMINISTRATION,
     'cloud-plans'
@@ -245,6 +263,8 @@ export class LINKS {
   );
 
   static ORGANIZATION_INVOICES = Link.ofParent(LINKS.ORGANIZATION, 'invoices');
+
+  static ORGANIZATION_SSO = Link.ofParent(LINKS.ORGANIZATION, 'sso');
 
   static ORGANIZATION_BILLING_TEST_CLOCK_HELPER = Link.ofParent(
     LINKS.ORGANIZATION,
@@ -369,4 +389,13 @@ export class LINKS {
   static SLACK = Link.ofRoot('slack');
   static SLACK_CONNECT = Link.ofParent(LINKS.SLACK, 'connect');
   static SLACK_CONNECTED = Link.ofParent(LINKS.SLACK, 'connected');
+}
+
+export enum QUERY {
+  TRANSLATIONS_PREFILTERS_ACTIVITY = 'activity',
+  TRANSLATIONS_PREFILTERS_FAILED_JOB = 'failedJob',
+  TRANSLATIONS_PREFILTERS_TASK = 'task',
+  TRANSLATIONS_PREFILTERS_TASK_HIDE_DONE = 'taskHideDone',
+  TRANSLATIONS_TASK_DETAIL = 'taskDetail',
+  TASKS_FILTERS_SHOW_ALL = 'showAll',
 }

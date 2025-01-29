@@ -35,9 +35,13 @@ class SingleStepImportControllerTest : ProjectAuthControllerTest("/v2/projects/"
   @Value("classpath:import/xliff/simple.xliff")
   lateinit var simpleXliff: Resource
 
+  @Value("classpath:import/po/codeReferences.po")
+  lateinit var codeReferencesPo: Resource
+
   lateinit var testData: SingleStepImportTestData
 
   private val xliffFileName: String = "file.xliff"
+  private val poFileName = "file.po"
   private val jsonFileName = "en.json"
 
   @BeforeEach
@@ -57,6 +61,20 @@ class SingleStepImportControllerTest : ProjectAuthControllerTest("/v2/projects/"
     executeInNewTransaction {
       assertJsonImported()
       getTestTranslation().key.keyMeta!!.tags.map { it.name }.assert.contains("new-tag")
+    }
+  }
+
+  @Test
+  @ProjectJWTAuthTestMethod
+  fun `import po with code references`() {
+    saveAndPrepare()
+    performImport(
+      projectId = testData.project.id,
+      listOf(Pair(poFileName, codeReferencesPo)),
+    )
+    executeInNewTransaction {
+      assertPoImported()
+      getTestTranslation().key.keyMeta!!.codeReferences.map { it.path }.assert.contains("dir/file.py")
     }
   }
 
@@ -142,6 +160,7 @@ class SingleStepImportControllerTest : ProjectAuthControllerTest("/v2/projects/"
   @ProjectJWTAuthTestMethod
   fun `maps namespace`() {
     saveAndPrepare()
+    enableNamespaces()
     performImport(
       projectId = testData.project.id,
       listOf(Pair(jsonFileName, simpleJson)),
@@ -154,8 +173,33 @@ class SingleStepImportControllerTest : ProjectAuthControllerTest("/v2/projects/"
 
   @Test
   @ProjectJWTAuthTestMethod
+  fun `namespace mapping fails if namespaces are disabled`() {
+    saveAndPrepare()
+    performImport(
+      projectId = testData.project.id,
+      listOf(Pair(jsonFileName, simpleJson)),
+      getFileMappings(jsonFileName, namespace = "test"),
+    ).andIsBadRequest.andHasErrorMessage(Message.NAMESPACE_CANNOT_BE_USED_WHEN_FEATURE_IS_DISABLED)
+  }
+
+  @Test
+  @ProjectJWTAuthTestMethod
+  fun `detected namespaces are ignored if namespaces are disabled`() {
+    saveAndPrepare()
+    performImport(
+      projectId = testData.project.id,
+      listOf(Pair("test-namespace/$jsonFileName", simpleJson)),
+    ).andIsOk
+    executeInNewTransaction {
+      getTestTranslation(namespace = null).assert.isNotNull
+    }
+  }
+
+  @Test
+  @ProjectJWTAuthTestMethod
   fun `maps null namespace from non-null mapping`() {
     saveAndPrepare()
+    enableNamespaces()
     val fileName = "guessed-ns/en.json"
     performImport(
       projectId = testData.project.id,
@@ -166,6 +210,13 @@ class SingleStepImportControllerTest : ProjectAuthControllerTest("/v2/projects/"
     executeInNewTransaction {
       getTestTranslation().assert.isNotNull
     }
+
+    performImport(
+      projectId = testData.project.id,
+      listOf(Pair(fileName, simpleJson)),
+      getFileMappings(fileName, namespace = ""),
+    ).andIsOk
+
     performImport(
       projectId = testData.project.id,
       listOf(Pair(fileName, simpleJson)),
@@ -361,9 +412,19 @@ class SingleStepImportControllerTest : ProjectAuthControllerTest("/v2/projects/"
     getTestTranslation().text.assert.isEqualTo("test")
   }
 
+  private fun assertPoImported() {
+    getTestTranslation().text.assert.isEqualTo("In English!")
+  }
+
   private fun saveAndPrepare() {
     testDataService.saveTestData(testData.root)
     userAccount = testData.user
     projectSupplier = { testData.project }
+  }
+
+  private fun enableNamespaces() {
+    val fetchedProject = projectService.find(testData.project.id)!!
+    fetchedProject.useNamespaces = true
+    projectService.save(fetchedProject)
   }
 }

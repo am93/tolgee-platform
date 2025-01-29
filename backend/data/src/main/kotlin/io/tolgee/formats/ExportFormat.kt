@@ -26,6 +26,11 @@ enum class ExportFormat(
     "application/xml",
     defaultFileStructureTemplate = "values-{androidLanguageTag}/strings.{extension}",
   ),
+  COMPOSE_XML(
+    "xml",
+    "application/xml",
+    defaultFileStructureTemplate = "values-{androidLanguageTag}/strings.{extension}",
+  ),
   FLUTTER_ARB(
     "arb",
     "application/json",
@@ -36,4 +41,6 @@ enum class ExportFormat(
   YAML("yaml", "application/x-yaml"),
   JSON_I18NEXT("json", "application/json"),
   CSV("csv", "text/csv"),
+  RESX_ICU("resx", "text/microsoft-resx"),
+  XLSX("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
 }

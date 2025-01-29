@@ -52,7 +52,6 @@ apply plugin: 'org.hibernate.orm'
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 idea {
@@ -169,7 +168,13 @@ dependencies {
     implementation libs.jacksonKotlin
     implementation("org.apache.commons:commons-configuration2:2.10.1")
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+
+    /**
+     * Table formats
+     */
     implementation("com.opencsv:opencsv:5.9")
+    implementation 'org.apache.poi:poi:5.3.0'
+    implementation 'org.apache.poi:poi-ooxml:5.3.0'
 
     /**
      * Google translation API
@@ -195,7 +200,7 @@ dependencies {
     implementation(libs.azureBlob) {
         exclude group: 'io.netty', module: 'netty-codec-http'
     }
-    implementation('io.netty:netty-codec-http:4.1.108.Final')
+    implementation('io.netty:netty-codec-http:4.1.115.Final')
 
     /**
      * SLACK SDK

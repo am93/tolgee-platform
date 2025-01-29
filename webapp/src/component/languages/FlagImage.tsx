@@ -17,11 +17,14 @@ const StyledImg = styled('img')`
 export const getFlagPath = (hex: string) => {
   let flagName: string;
   try {
-    flagName = getSvgNameByEmoji(hex);
+    flagName = getSvgNameByEmoji(hex).toUpperCase();
   } catch (e) {
-    flagName = getSvgNameByEmoji('🏳️');
+    flagName = getSvgNameByEmoji('🏳️').toUpperCase();
   }
-  return `/flags/${flagName}.svg`;
+
+  //return `/flags/${flagName}.svg`;
+  //return `https://anna-veda.com/skin/adminhtml/default/default/lib/emojione/svg/${flagName}.svg`
+  return `https://dev.atlaswms.net/flags/${flagName}.svg`;
 };
 
 type Props = ImgHTMLAttributes<HTMLImageElement> & {

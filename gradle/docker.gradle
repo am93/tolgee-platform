@@ -30,8 +30,8 @@ task docker {
 void createDockerBuildxTask(String taskName, boolean isPush) {
     task(taskName) {
         doLast {
-            if (project.hasProperty('dockerImageTag')) {
-                def commandParams = ["docker", "buildx", "build", ".", "-t", project.property('dockerImageTag'), "--platform", "linux/arm64,linux/amd64"]
+            //if (project.hasProperty('dockerImageTag')) {
+                def commandParams = ["podman", "build", ".", "--manifest", "nexus.epilog.net/epi-tolgee:v3.96.5", "--platform", "linux/amd64"]
                 if (isPush) {
                     commandParams += ["--push"]
                 }
@@ -39,9 +39,9 @@ void createDockerBuildxTask(String taskName, boolean isPush) {
                     workingDir dockerPath
                     commandLine commandParams
                 }
-            } else {
+            /*} else {
                 throw new GradleException('A "dockerImageTag" project property must be defined! e.g. ./gradlew dockerBuildx -PdockerImageTag=myImageTag');
-            }
+            }*/
         }
         dependsOn("dockerPrepare")
     }

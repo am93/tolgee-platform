@@ -61,7 +61,7 @@ class EeSubscriptionServiceImpl(
     const val REPORT_ERROR_PATH: String = "/v2/public/licensing/report-error"
   }
 
-  var bypassSeatCountCheck = false
+  var bypassSeatCountCheck = true
 
   @Cacheable(Caches.EE_SUBSCRIPTION, key = "1")
   override fun findSubscriptionDto(): EeSubscriptionDto? {

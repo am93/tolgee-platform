@@ -156,7 +156,7 @@ describe('project tasks', () => {
     });
   });
 
-  it('task create displays correct numbers for filter', () => {
+  it('task create displays correct numbers for state filter', () => {
     cy.gcy('tasks-header-add-task').click();
     cy.gcy('create-task-field-languages').click();
     cy.gcy('create-task-field-languages-item').contains('Czech').click();
@@ -171,6 +171,30 @@ describe('project tasks', () => {
       alert: false,
       words: 8,
       characters: 52,
+    });
+  });
+
+  it('task create displays correct numbers for key filter', () => {
+    cy.gcy('tasks-header-add-task').click();
+    cy.gcy('create-task-field-languages').click();
+    cy.gcy('create-task-field-languages-item').contains('Czech').click();
+
+    dismissMenu();
+    cy.waitForDom();
+    cy.gcy('translations-state-filter-clear').click();
+    cy.gcy('translations-filter-select').click();
+    cy.gcy('submenu-item').contains('Tags').click();
+    cy.gcy('filter-item-exclude').click();
+    dismissMenu();
+    dismissMenu();
+    waitForGlobalLoading();
+
+    checkTaskPreview({
+      language: 'Czech',
+      keys: 0,
+      alert: false,
+      words: 0,
+      characters: 0,
     });
   });
 
@@ -200,6 +224,25 @@ describe('project tasks', () => {
     cy.gcy('empty-scope-dialog').should('be.visible');
   });
 
+  it('task name can be empty', () => {
+    cy.gcy('tasks-header-add-task').click();
+    cy.waitForDom();
+    cy.gcy('create-task-field-languages').click();
+    cy.gcy('create-task-field-languages-item').contains('Czech').click();
+    dismissMenu();
+
+    cy.gcy('create-task-submit').click();
+    assertMessage('1 task created');
+
+    getTaskByNumber(3).findDcy('task-label-name').should('contain', 'Task');
+    getTaskByNumber(3).findDcy('task-item-detail').click();
+
+    cy.gcy('task-detail-field-description').type('Test description');
+
+    cy.gcy('task-detail-submit').click();
+    assertMessage('Task updated successfully');
+  });
+
   it('uses default state filters', () => {
     cy.gcy('tasks-header-add-task').click();
     cy.gcy('translations-state-filter').contains('Untranslated');
@@ -208,4 +251,12 @@ describe('project tasks', () => {
 
     cy.gcy('translations-state-filter').contains('Translated');
   });
+
+  function getTaskByNumber(number: number) {
+    return cy
+      .gcy('task-number')
+      .contains('#' + number)
+      .should('be.visible')
+      .closestDcy('task-item');
+  }
 });

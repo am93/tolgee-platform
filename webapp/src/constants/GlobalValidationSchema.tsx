@@ -306,6 +306,7 @@ export class Validation {
 
   static readonly CLOUD_PLAN_FORM = Yup.object({
     name: Yup.string().required(),
+    type: Yup.string().required(),
     stripeProductId: Yup.string().when('free', {
       is: false,
       then: Yup.string().required(),
@@ -407,7 +408,7 @@ export class Validation {
 
   static readonly CREATE_TASK_FORM = (t: TranslateFunction) =>
     Yup.object().shape({
-      name: Yup.string().min(3).required(),
+      name: Yup.string().min(3).optional(),
       languages: Yup.array(Yup.number()).min(
         1,
         t('validation_no_language_selected')
@@ -416,7 +417,7 @@ export class Validation {
 
   static readonly UPDATE_TASK_FORM = (t: TranslateFunction) =>
     Yup.object().shape({
-      name: Yup.string().min(3).required(),
+      name: Yup.string().min(3).optional(),
     });
 
   private static readonly validateUrlWithPort = (
@@ -427,8 +428,9 @@ export class Validation {
     return urlPattern.test(value);
   };
 
-  static readonly SSO_PROVIDER = (t: TranslateFunction) =>
+  static readonly SSO_PROVIDER_ENABLED = (t: TranslateFunction) =>
     Yup.object().shape({
+      force: Yup.boolean().required(),
       clientId: Yup.string().required().max(255),
       domain: Yup.string().required().max(255),
       clientSecret: Yup.string().required().max(255),
@@ -448,6 +450,16 @@ export class Validation {
           t('sso_invalid_url_format'),
           Validation.validateUrlWithPort
         ),
+    });
+
+  static readonly SSO_PROVIDER_DISABLED = (t: TranslateFunction) =>
+    Yup.object().shape({
+      force: Yup.boolean().required(),
+      clientId: Yup.string().max(255),
+      domain: Yup.string().max(255),
+      clientSecret: Yup.string().max(255),
+      authorizationUri: Yup.string().max(255),
+      tokenUri: Yup.string().max(255),
     });
 
   static readonly TRANSLATION_AGENCY_FORM = () =>

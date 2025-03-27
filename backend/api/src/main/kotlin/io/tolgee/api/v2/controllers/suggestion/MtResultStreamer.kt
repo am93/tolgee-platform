@@ -1,6 +1,6 @@
 package io.tolgee.api.v2.controllers.suggestion
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.sentry.Sentry
 import io.tolgee.constants.MtServiceType
 import io.tolgee.dtos.cacheable.ProjectDto
@@ -41,12 +41,7 @@ class MtResultStreamer(
 
     return streamingResponseBodyProvider.createStreamingResponseBody { outputStream ->
       this.outputStream = outputStream
-      try {
-        writer.writeJson(info)
-      } catch (e: Exception) {
-        throw e
-      }
-
+      writer.writeJson(info)
       if (!baseBlank) {
         writeServiceResultsAsync()
       }
@@ -82,6 +77,7 @@ class MtResultStreamer(
         }
       }
     } catch (e: Exception) {
+      logger.debug("Error while streaming machine translation suggestion", e)
       writeException(e, writer, service)
       if (e !is BadRequestException && e !is NotFoundException) {
         Sentry.captureException(e)
@@ -144,7 +140,8 @@ class MtResultStreamer(
   }
 
   private fun OutputStreamWriter.writeJson(data: Any) {
-    this.write(jacksonObjectMapper().writeValueAsString(data) + "\n")
+    val string = objectMapper.writeValueAsString(data)
+    this.write(string + "\n")
     this.flush()
   }
 
@@ -164,6 +161,10 @@ class MtResultStreamer(
 
   private val mtTranslator by lazy {
     mtService.getMtTranslator(projectHolder.project.id, false)
+  }
+
+  private val objectMapper by lazy {
+    applicationContext.getBean(ObjectMapper::class.java)
   }
 
   private val baseBlank by lazy {

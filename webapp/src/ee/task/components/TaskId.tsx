@@ -1,7 +1,7 @@
 import { Box, styled, SxProps } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { components } from 'tg.service/apiSchema.generated';
-import { getTaskUrl } from './utils';
+import { getTaskUrl } from 'tg.constants/links';
 
 export const Container = styled(Box)`
   color: ${({ theme }) => theme.palette.tokens.icon.secondary};
@@ -17,7 +17,11 @@ type TaskNumberProps = {
 };
 
 export const TaskNumber = ({ sx, className, taskNumber }: TaskNumberProps) => {
-  return <Container {...{ sx, className }}>#{taskNumber}</Container>;
+  return (
+    <Container data-cy="task-number" {...{ sx, className }}>
+      #{taskNumber}
+    </Container>
+  );
 };
 
 type TaskNumberWithLinkProps = {
@@ -37,7 +41,7 @@ export const TaskNumberWithLink = ({
     <Container
       component={Link}
       // @ts-ignore
-      to={getTaskUrl(project, taskNumber)}
+      to={getTaskUrl(project.id, taskNumber)}
       {...{ sx, className }}
     >
       #{taskNumber}

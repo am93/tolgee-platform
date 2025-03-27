@@ -263,7 +263,7 @@ class StoredDataImporter(
   }
 
   private fun ImportTranslation.doImport() {
-    if (!this.isSelectedToImport || !this.key.shouldBeImported) {
+    if (!this.isSelectedToImport || !this.key.shouldBeImported || this.language.ignored) {
       return
     }
     this.checkConflictResolved()
@@ -279,8 +279,7 @@ class StoredDataImporter(
       if (language == language.project.baseLanguage && translation.text != this.text) {
         outdatedFlagKeys.add(translation.key.id)
       }
-      translation.text = this@doImport.text
-      translation.resetFlags()
+      translationService.setTranslationTextNoSave(translation, text)
       translationsToSave.add(this to translation)
     }
   }

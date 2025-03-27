@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { T } from '@tolgee/react';
 import { useHistory } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,11 +9,10 @@ import {
   tokenService,
 } from 'tg.service/TokenService';
 import { components } from 'tg.service/apiSchema.generated';
-import { useApiMutation } from 'tg.service/http/useQueryApi';
+import { useApiMutation, useApiQuery } from 'tg.service/http/useQueryApi';
 import { useInitialDataService } from './useInitialDataService';
 import { LINKS, PARAMS } from 'tg.constants/links';
 import { messageService } from 'tg.service/MessageService';
-import { TranslatedError } from 'tg.translationTools/TranslatedError';
 import { useLocalStorageState } from 'tg.hooks/useLocalStorageState';
 
 type LoginRequest = components['schemas']['LoginRequest'];
@@ -24,7 +23,8 @@ type SuperTokenAction = { onCancel: () => void; onSuccess: () => void };
 
 export const INVITATION_CODE_STORAGE_KEY = 'invitationCode';
 
-const LOCAL_STORAGE_STATE_KEY = 'oauth2State';
+const LOCAL_STORAGE_OAUTH_STATE_KEY = 'oauth2State';
+const LOCAL_STORAGE_SSO_STATE_KEY = 'ssoState';
 const LOCAL_STORAGE_DOMAIN_KEY = 'ssoDomain';
 
 export function getRedirectUrl(userId?: number) {
@@ -120,14 +120,61 @@ export const useAuthService = (
 
   const history = useHistory();
 
-  async function getSsoAuthLinkByDomain(domain: string, state: string) {
+  async function getSsoAuthLinkByDomain(domain: string) {
+    localStorage.setItem(LOCAL_STORAGE_DOMAIN_KEY, domain);
+    const state = generateSsoStateKey();
     return await redirectSsoUrlLoadable.mutateAsync({
       content: { 'application/json': { domain, state } },
     });
   }
 
+  function useSsoAuthLinkByDomain(domain: string) {
+    const state = useMemo(() => generateSsoStateKey(), []);
+    localStorage.setItem(LOCAL_STORAGE_DOMAIN_KEY, domain);
+    return useApiQuery({
+      url: '/api/public/authorize_oauth/sso/authentication-url',
+      method: 'post',
+      content: { 'application/json': { domain, state } },
+      fetchOptions: {
+        disableAutoErrorHandle: true,
+        disableErrorNotification: true,
+        disable404Redirect: true,
+      },
+    });
+  }
+
   function getLastSsoDomain() {
-    return localStorage.getItem(LOCAL_STORAGE_DOMAIN_KEY);
+    return localStorage.getItem(LOCAL_STORAGE_DOMAIN_KEY) ?? undefined;
+  }
+
+  function generateStateKey(key: string): string {
+    const state = uuidv4();
+    localStorage.setItem(key, state);
+    return state;
+  }
+
+  function generateOAuthStateKey(): string {
+    return generateStateKey(LOCAL_STORAGE_OAUTH_STATE_KEY);
+  }
+
+  function getOAuthStateKey(): string | undefined {
+    return localStorage.getItem(LOCAL_STORAGE_OAUTH_STATE_KEY) ?? undefined;
+  }
+
+  function clearOAuthStateKey() {
+    localStorage.removeItem(LOCAL_STORAGE_OAUTH_STATE_KEY);
+  }
+
+  function generateSsoStateKey(): string {
+    return generateStateKey(LOCAL_STORAGE_SSO_STATE_KEY);
+  }
+
+  function getSsoStateKey(): string | undefined {
+    return localStorage.getItem(LOCAL_STORAGE_SSO_STATE_KEY) ?? undefined;
+  }
+
+  function clearSsoStateKey() {
+    localStorage.removeItem(LOCAL_STORAGE_SSO_STATE_KEY);
   }
 
   async function setJwtToken(token: string | undefined) {
@@ -185,11 +232,28 @@ export const useAuthService = (
     invitationCode,
   };
 
+  async function loginRedirectSso(domain: string) {
+    const response = await getSsoAuthLinkByDomain(domain);
+    window.location.href = response.redirectUrl;
+  }
+
   const actions = {
     async login(credentials: LoginRequest) {
-      const response = await loginLoadable.mutateAsync({
-        content: { 'application/json': credentials },
-      });
+      const response = await loginLoadable.mutateAsync(
+        {
+          content: { 'application/json': credentials },
+        },
+        {
+          onError: (error) => {
+            if (error.code === 'third_party_switch_initiated') {
+              history.replace(LINKS.ACCEPT_AUTH_PROVIDER_CHANGE.build());
+            }
+            if (error.code === 'use_sso_for_authentication_instead') {
+              loginRedirectSso(error.params?.[0]);
+            }
+          },
+        }
+      );
       response.accessToken;
       await handleAfterLogin(response!);
     },
@@ -208,24 +272,34 @@ export const useAuthService = (
           },
         },
         {
+          onSuccess: (response) => {
+            history.replace(LINKS.AFTER_LOGIN.build());
+          },
           onError: (error) => {
+            if (error.code === 'third_party_switch_initiated') {
+              history.replace(LINKS.ACCEPT_AUTH_PROVIDER_CHANGE.build());
+            }
             if (error.code === 'invitation_code_does_not_exist_or_expired') {
               setInvitationCode(undefined);
             }
-            messageService.error(<TranslatedError code={error.code!} />);
+            if (error.code === 'use_sso_for_authentication_instead') {
+              loginRedirectSso(error.params?.[0]);
+            }
           },
         }
       );
       setInvitationCode(undefined);
       await handleAfterLogin(response!);
     },
-    async loginRedirectSso(domain: string) {
-      localStorage.setItem(LOCAL_STORAGE_DOMAIN_KEY, domain || '');
-      const state = uuidv4();
-      localStorage.setItem(LOCAL_STORAGE_STATE_KEY, state);
-      const response = await getSsoAuthLinkByDomain(domain, state);
-      window.location.href = response.redirectUrl;
-    },
+    loginRedirectSso,
+    getSsoAuthLinkByDomain,
+    useSsoAuthLinkByDomain,
+    generateSsoStateKey,
+    getSsoStateKey,
+    clearSsoStateKey,
+    generateOAuthStateKey,
+    getOAuthStateKey,
+    clearOAuthStateKey,
     getLastSsoDomain,
     async signUp(data: Omit<SignUpDto, 'invitationCode'>) {
       signupLoadable.mutate(
@@ -285,12 +359,22 @@ export const useAuthService = (
       setAdminToken(jwtToken);
     },
     exitDebugCustomerAccount() {
+      if (adminToken === undefined) {
+        return;
+      }
+      setJwtToken(adminToken);
+      setAdminToken(undefined);
+    },
+    exitDebugCustomerAccountOrLogout() {
       setJwtToken(adminToken);
       setAdminToken(undefined);
     },
     setInvitationCode,
+    currentLocation() {
+      return history.location.pathname + history.location.search;
+    },
     redirectTo(url: string) {
-      history.replace(LINKS.AFTER_LOGIN.build());
+      history.replace(url);
     },
   };
 

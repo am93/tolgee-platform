@@ -102,6 +102,12 @@ export class LINKS {
     'accept_invitation/' + p(PARAMS.INVITATION_CODE)
   );
 
+  static SSO_MIGRATION = Link.ofRoot('sso_migration');
+
+  static ACCEPT_AUTH_PROVIDER_CHANGE = Link.ofRoot(
+    'accept_auth_provider_change'
+  );
+
   static GO_TO_CLOUD_BILLING = Link.ofRoot('billing');
   static GO_TO_SELF_HOSTED_BILLING = Link.ofRoot('billing-self-hosted');
 
@@ -112,6 +118,11 @@ export class LINKS {
    */
 
   static USER_SETTINGS = Link.ofRoot('account');
+
+  static USER_ACCOUNT_NOTIFICATIONS = Link.ofParent(
+    LINKS.USER_SETTINGS,
+    'notifications'
+  );
 
   static USER_API_KEYS = Link.ofParent(LINKS.USER_SETTINGS, 'apiKeys');
 
@@ -217,6 +228,11 @@ export class LINKS {
   static ADMINISTRATION_BILLING_EE_PLANS = Link.ofParent(
     LINKS.ADMINISTRATION,
     'ee-plans'
+  );
+
+  static ADMINISTRATION_BILLING_SUBSCRIPTIONS = Link.ofParent(
+    LINKS.ADMINISTRATION,
+    'subscriptions'
   );
 
   static ADMINISTRATION_BILLING_EE_PLAN_EDIT = Link.ofParent(
@@ -395,7 +411,13 @@ export enum QUERY {
   TRANSLATIONS_PREFILTERS_ACTIVITY = 'activity',
   TRANSLATIONS_PREFILTERS_FAILED_JOB = 'failedJob',
   TRANSLATIONS_PREFILTERS_TASK = 'task',
-  TRANSLATIONS_PREFILTERS_TASK_HIDE_DONE = 'taskHideDone',
+  TRANSLATIONS_PREFILTERS_TASK_HIDE_CLOSED = 'taskHideClosed',
   TRANSLATIONS_TASK_DETAIL = 'taskDetail',
   TASKS_FILTERS_SHOW_ALL = 'showAll',
 }
+
+export const getTaskUrl = (projectId: number, taskNumber: number) => {
+  return `${LINKS.GO_TO_PROJECT_TASK.build({
+    [PARAMS.PROJECT_ID]: projectId,
+  })}?number=${taskNumber}`;
+};

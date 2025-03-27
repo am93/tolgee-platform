@@ -16,7 +16,6 @@ import {
   ChangeValue,
   Edit,
   EditorProps,
-  Filters,
   KeyElement,
   KeyUpdateData,
   RemoveTag,
@@ -37,6 +36,8 @@ import { PrefilterType } from '../prefilters/usePrefilter';
 import { useTaskService } from './services/useTaskService';
 import { usePositionService } from './services/usePositionService';
 import { useLayoutService } from './services/useLayoutService';
+import { AddParams } from '../TranslationFilters/tools';
+import { FiltersType } from 'tg.views/projects/translations/TranslationFilters/tools';
 
 type Props = {
   projectId: number;
@@ -68,11 +69,23 @@ export const [
 
   const { satisfiesLanguageAccess } = useProjectPermissions();
 
+  const prefilteredTaskLoadable = useApiQuery({
+    url: '/v2/projects/{projectId}/tasks/{taskNumber}',
+    method: 'get',
+    path: {
+      projectId: props.projectId,
+      taskNumber: props.prefilter?.task as number,
+    },
+    options: {
+      enabled: props.prefilter?.task !== undefined,
+    },
+  });
+
   const languagesLoadable = useApiQuery({
     url: '/v2/projects/{projectId}/languages',
     method: 'get',
     path: { projectId: props.projectId },
-    query: { size: 1000, sort: ['tag'] },
+    query: { size: 1000, sort: ['name'] },
     options: {
       cacheTime: 0,
     },
@@ -80,9 +93,9 @@ export const [
 
   const allowedLanguages = useMemo(
     () =>
-      languagesLoadable.data?._embedded?.languages?.filter((l) =>
-        satisfiesLanguageAccess('translations.view', l.id)
-      ),
+      languagesLoadable.data?._embedded?.languages
+        ?.filter((l) => satisfiesLanguageAccess('translations.view', l.id))
+        ?.sort((a, b) => Number(b.base) - Number(a.base)),
     [languagesLoadable.data]
   );
 
@@ -108,7 +121,6 @@ export const [
   const stateService = useStateService({
     translations: translationService,
     taskService,
-    prefilter: props.prefilter,
   });
 
   const positionService = usePositionService({
@@ -121,7 +133,6 @@ export const [
     translationService,
     viewRefs,
     taskService,
-    prefilter: props.prefilter,
   });
 
   const tagsService = useTagsService({
@@ -160,9 +171,27 @@ export const [
       translationService.setUrlSearch(search);
       return handleTranslationsReset();
     },
-    async setFilters(filters: Filters) {
+    async addFilter(...params: AddParams) {
       if (await positionService.confirmUnsavedChanges()) {
-        translationService.setFilters(filters);
+        translationService.addFilter(...params);
+        return handleTranslationsReset();
+      }
+    },
+    async removeFilter(...params: AddParams) {
+      if (await positionService.confirmUnsavedChanges()) {
+        translationService.removeFilter(...params);
+        return handleTranslationsReset();
+      }
+    },
+    async setFilters(value: FiltersType) {
+      if (await positionService.confirmUnsavedChanges()) {
+        translationService.setFilters(value);
+        return handleTranslationsReset();
+      }
+    },
+    async setOrder(value: string) {
+      if (await positionService.confirmUnsavedChanges()) {
+        translationService.setOrder(value);
         return handleTranslationsReset();
       }
     },
@@ -297,12 +326,14 @@ export const [
     search: translationService.search as string,
     urlSearch: translationService.urlSearch,
     filters: translationService.filters,
+    order: translationService.order,
     cursor: positionService.position,
     selection: selectionService.data,
     view: view as ViewMode,
     elementsRef: viewRefs.elementsRef,
     reactList: viewRefs.reactList,
     prefilter: props.prefilter,
+    prefilteredTask: prefilteredTaskLoadable.data,
     layout,
   };
 

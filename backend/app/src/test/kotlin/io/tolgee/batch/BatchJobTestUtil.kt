@@ -263,6 +263,7 @@ class BatchJobTestUtil(
         port,
         jwtService.emitToken(testData.user.id),
         testData.projectBuilder.self.id,
+        testData.user.id,
       )
     websocketHelper.listenForBatchJobProgress()
   }
@@ -400,7 +401,7 @@ class BatchJobTestUtil(
     waitForNotThrowing {
       // the project was unlocked before job2 acquired the job
       verify(batchJobProjectLockingManager, times(1)).unlockJobForProject(
-        ArgumentMatchers.eq(job.project.id),
+        ArgumentMatchers.eq(job.project?.id),
         ArgumentMatchers.eq(job.id),
       )
     }

@@ -123,7 +123,7 @@ jobs:
         id: reportName
         if: always()
         run: |
-          reportName=${{ matrix.command }}
+          reportName=${{ matrix.command.run }}
           echo "reportName=${reportName//\:/_}" >> $GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v4
@@ -139,6 +139,7 @@ jobs:
         with:
           name: Test report for ${{ matrix.command }}
           path: "**/build/test-results/**/TEST-*.xml"
+          fail-on-error: false
           reporter: java-junit
 
   e2e:
@@ -273,7 +274,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: webapp
-          path: webapp/build
+          path: webapp/dist
 
   e2e-install-deps:
     name: Install E2E dependencies ⬇️

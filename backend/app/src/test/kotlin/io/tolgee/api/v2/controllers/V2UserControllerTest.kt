@@ -5,15 +5,12 @@ import io.tolgee.development.testDataBuilder.data.SensitiveOperationProtectionTe
 import io.tolgee.development.testDataBuilder.data.UserDeletionTestData
 import io.tolgee.dtos.request.UserUpdatePasswordRequestDto
 import io.tolgee.dtos.request.UserUpdateRequestDto
-import io.tolgee.fixtures.EmailTestUtil
-import io.tolgee.fixtures.andAssertThatJson
-import io.tolgee.fixtures.andIsBadRequest
-import io.tolgee.fixtures.andIsForbidden
-import io.tolgee.fixtures.andIsOk
-import io.tolgee.fixtures.node
+import io.tolgee.fixtures.*
 import io.tolgee.model.UserAccount
+import io.tolgee.model.notifications.NotificationType.PASSWORD_CHANGED
 import io.tolgee.testing.AuthorizedControllerTest
 import io.tolgee.testing.ContextRecreatingTest
+import io.tolgee.testing.NotificationTestUtil
 import io.tolgee.testing.assert
 import io.tolgee.testing.assertions.Assertions.assertThat
 import org.assertj.core.api.Assertions
@@ -26,11 +23,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import java.util.*
 
 @ContextRecreatingTest
-@SpringBootTest(
-  properties = [
-    "tolgee.front-end-url=https://fake.frontend.url",
-  ],
-)
+@SpringBootTest
 class V2UserControllerTest : AuthorizedControllerTest() {
   @Autowired
   override lateinit var tolgeeProperties: TolgeeProperties
@@ -41,9 +34,13 @@ class V2UserControllerTest : AuthorizedControllerTest() {
   @Autowired
   private lateinit var emailTestUtil: EmailTestUtil
 
+  @Autowired
+  private lateinit var notificationUtil: NotificationTestUtil
+
   @BeforeEach
   fun init() {
     emailTestUtil.initMocks()
+    notificationUtil.init()
   }
 
   @Test
@@ -70,6 +67,13 @@ class V2UserControllerTest : AuthorizedControllerTest() {
     val fromDb = userAccountService.findActive(initialUsername)
     Assertions.assertThat(passwordEncoder.matches(requestDTO.password, fromDb!!.password))
       .describedAs("Password is changed").isTrue
+
+    notificationUtil.newestInAppNotification().also {
+      assertThat(it.type).isEqualTo(PASSWORD_CHANGED)
+      assertThat(it.user.id).isEqualTo(userAccount?.id)
+      assertThat(it.originatingUser?.id).isEqualTo(userAccount?.id)
+    }
+    assertThat(notificationUtil.newestEmailNotification()).contains("Password has been changed for your account")
   }
 
   @Test
@@ -263,6 +267,18 @@ class V2UserControllerTest : AuthorizedControllerTest() {
         authentication.details?.isSuperToken == true
       }
     }
+  }
+
+  @Test
+  fun `it returns no content for sso info`() {
+    // EE dependant endpoint - without EE always returns no content
+    performAuthGet("/v2/user/sso").andIsNoContent
+  }
+
+  @Test
+  fun `it returns no content for managed by`() {
+    // EE dependant endpoint - without EE always returns no content
+    performAuthGet("/v2/user/managed-by").andIsNoContent
   }
 
   private fun assertSingleOwned(

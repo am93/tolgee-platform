@@ -8,6 +8,7 @@ import io.tolgee.fixtures.andIsBadRequest
 import io.tolgee.fixtures.andIsForbidden
 import io.tolgee.fixtures.andIsOk
 import io.tolgee.testing.AuthorizedControllerTest
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,10 +21,18 @@ class SsoProviderControllerTest : AuthorizedControllerTest() {
 
   @BeforeEach
   fun setup() {
+    enabledFeaturesProvider.forceEnabled = setOf(Feature.SSO)
+    tolgeeProperties.authentication.ssoOrganizations.enabled = true
     testData = SsoTestData()
     testDataService.saveTestData(testData.root)
-    this.userAccount = testData.user
-    enabledFeaturesProvider.forceEnabled = setOf(Feature.SSO)
+    this.userAccount = testData.userAdmin
+  }
+
+  @AfterEach
+  fun tearDown() {
+    testDataService.cleanTestData(testData.root)
+    enabledFeaturesProvider.forceEnabled = null
+    tolgeeProperties.authentication.ssoOrganizations.enabled = false
   }
 
   @Test
@@ -32,6 +41,61 @@ class SsoProviderControllerTest : AuthorizedControllerTest() {
       "/v2/organizations/${testData.organization.id}/sso",
       requestTenant(),
     ).andIsOk
+
+    loginAsUser(testData.user)
+    performAuthGet("/v2/organizations/${testData.organization.id}/sso")
+      .andIsOk
+      .andAssertThatJson {
+        node("domain").isEqualTo("google")
+        node("clientId").isEqualTo("dummy_client_id")
+        node("clientSecret").isEqualTo("clientSecret")
+        node("authorizationUri").isEqualTo("https://dummy-url.com")
+        node("tokenUri").isEqualTo("tokenUri")
+        node("enabled").isEqualTo(true)
+        node("force").isEqualTo(false)
+      }
+  }
+
+  @Test
+  fun `allows organization admin to modify tenant when domain is unmodified sso provider`() {
+    performAuthPut(
+      "/v2/organizations/${testData.organization.id}/sso",
+      requestTenant(),
+    ).andIsOk
+
+    loginAsUser(testData.user)
+
+    performAuthPut(
+      "/v2/organizations/${testData.organization.id}/sso",
+      requestTenant1(),
+    ).andIsOk
+
+    performAuthGet("/v2/organizations/${testData.organization.id}/sso")
+      .andIsOk
+      .andAssertThatJson {
+        node("domain").isEqualTo("google")
+        node("clientId").isEqualTo("dummy_client_id1")
+        node("clientSecret").isEqualTo("clientSecret1")
+        node("authorizationUri").isEqualTo("https://dummy-url1.com")
+        node("tokenUri").isEqualTo("tokenUri1")
+        node("enabled").isEqualTo(true)
+        node("force").isEqualTo(true)
+      }
+  }
+
+  @Test
+  fun `doesn't allow organization admin to modify tenant domain`() {
+    performAuthPut(
+      "/v2/organizations/${testData.organization.id}/sso",
+      requestTenant(),
+    ).andIsOk
+
+    loginAsUser(testData.user)
+
+    performAuthPut(
+      "/v2/organizations/${testData.organization.id}/sso",
+      requestTenant0(),
+    ).andIsForbidden
 
     performAuthGet("/v2/organizations/${testData.organization.id}/sso")
       .andIsOk
@@ -52,6 +116,7 @@ class SsoProviderControllerTest : AuthorizedControllerTest() {
       requestTenant2(),
     ).andIsOk
 
+    loginAsUser(testData.user)
     performAuthGet("/v2/organizations/${testData.organization.id}/sso")
       .andIsOk
       .andAssertThatJson {
@@ -117,6 +182,30 @@ class SsoProviderControllerTest : AuthorizedControllerTest() {
       "enabled" to true,
     )
 
+  fun requestTenant0() =
+    mapOf(
+      "domain" to "googleModified",
+      "clientId" to "dummy_client_id1",
+      "clientSecret" to "clientSecret1",
+      "authorizationUri" to "https://dummy-url1.com",
+      "redirectUri" to "redirectUri1",
+      "tokenUri" to "tokenUri1",
+      "enabled" to true,
+      "force" to true,
+    )
+
+  fun requestTenant1() =
+    mapOf(
+      "domain" to "google",
+      "clientId" to "dummy_client_id1",
+      "clientSecret" to "clientSecret1",
+      "authorizationUri" to "https://dummy-url1.com",
+      "redirectUri" to "redirectUri1",
+      "tokenUri" to "tokenUri1",
+      "enabled" to true,
+      "force" to true,
+    )
+
   fun requestTenant2() =
     mapOf(
       "domain" to "",
@@ -141,7 +230,7 @@ class SsoProviderControllerTest : AuthorizedControllerTest() {
 
   fun requestTenantInvalid2() =
     mapOf(
-      "domain" to "",
+      "domain" to "google",
       "clientId" to "",
       "clientSecret" to "",
       "authorizationUri" to "",

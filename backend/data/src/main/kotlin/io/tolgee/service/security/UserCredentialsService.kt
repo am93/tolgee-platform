@@ -18,9 +18,10 @@ class UserCredentialsService(
     username: String,
     password: String,
   ): UserAccount {
-    val userAccount =
-      userAccountService.findActive(username)
-        ?: throw AuthenticationException(Message.BAD_CREDENTIALS)
+    val userAccount = userAccountService.findActive(username)
+    if (userAccount == null) {
+      throw AuthenticationException(Message.BAD_CREDENTIALS)
+    }
 
     if (userAccount.accountType == UserAccount.AccountType.MANAGED) {
       throw AuthenticationException(Message.OPERATION_UNAVAILABLE_FOR_ACCOUNT_TYPE)

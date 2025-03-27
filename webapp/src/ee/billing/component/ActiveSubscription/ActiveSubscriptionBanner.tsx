@@ -26,6 +26,11 @@ export const ActiveSubscriptionBanner = ({ status, custom }: Props) => {
     { label: string; color: 'secondary' | 'error' }
   > = {
     ACTIVE: { label: t('ee_license_status_label_active'), color: 'secondary' },
+    // we don't support trials for EE yet, so let's use the same as for active (if it happens by any chance)
+    TRIALING: {
+      label: t('ee_license_status_label_active'),
+      color: 'secondary',
+    },
     CANCELED: {
       label: t('ee_license_status_label_canceled'),
       color: 'error',
@@ -38,6 +43,10 @@ export const ActiveSubscriptionBanner = ({ status, custom }: Props) => {
     UNPAID: { label: t('ee_license_status_label_unpaid'), color: 'error' },
     KEY_USED_BY_ANOTHER_INSTANCE: {
       label: t('ee_license_status_label_key_used_by_another_instance'),
+      color: 'error',
+    },
+    UNKNOWN: {
+      label: t('ee_license_status_label_unknown'),
       color: 'error',
     },
   };

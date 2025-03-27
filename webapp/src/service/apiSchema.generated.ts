@@ -9,6 +9,7 @@ export interface paths {
     get: operations["doExportJsonZip"];
   };
   "/api/public/authorize_oauth/sso/authentication-url": {
+    /** Returns URL which can be used to authenticate user using third party SSO service */
     post: operations["getAuthenticationUrl"];
   };
   "/api/public/authorize_oauth/{serviceType}": {
@@ -101,6 +102,15 @@ export interface paths {
     /** Returns specific API key info */
     get: operations["get_21"];
   };
+  "/v2/auth-provider": {
+    get: operations["getCurrentAuthProvider"];
+    delete: operations["deleteCurrentAuthProvider"];
+  };
+  "/v2/auth-provider/change": {
+    get: operations["getChangedAuthProvider"];
+    post: operations["acceptChangeAuthProvider"];
+    delete: operations["rejectChangeAuthProvider"];
+  };
   "/v2/ee-license/info": {
     get: operations["getInfo_5"];
   };
@@ -130,6 +140,18 @@ export interface paths {
   };
   "/v2/invitations/{invitationId}": {
     delete: operations["deleteInvitation"];
+  };
+  "/v2/notification": {
+    get: operations["getNotifications"];
+  };
+  "/v2/notification-settings": {
+    /** Returns notification settings of the currently logged in user */
+    get: operations["getNotificationsSettings"];
+    /** Saves new value for given parameters */
+    put: operations["putNotificationSetting"];
+  };
+  "/v2/notifications-mark-seen": {
+    put: operations["markNotificationsAsSeen"];
   };
   "/v2/organizations": {
     /** Returns all organizations, which is current user allowed to view */
@@ -632,6 +654,9 @@ export interface paths {
     /** If the tasks is blocked by other tasks, it returns numbers of these tasks. */
     get: operations["getBlockingTasks"];
   };
+  "/v2/projects/{projectId}/tasks/{taskNumber}/cancel": {
+    put: operations["cancelTask"];
+  };
   "/v2/projects/{projectId}/tasks/{taskNumber}/close": {
     put: operations["closeTask"];
   };
@@ -855,6 +880,10 @@ export interface paths {
     /** Generates new JWT token permitted to sensitive operations */
     post: operations["getSuperToken"];
   };
+  "/v2/user/managed-by": {
+    /** Returns the organization that manages a given user or null */
+    get: operations["getManagedBy"];
+  };
   "/v2/user/mfa/recovery": {
     /** Regenerates multi-factor authentication recovery codes */
     put: operations["regenerateRecoveryCodes"];
@@ -877,10 +906,17 @@ export interface paths {
     /** Returns all organizations owned only by current user */
     get: operations["getAllSingleOwnedOrganizations"];
   };
+  "/v2/user/sso": {
+    /** Returns information about sso configuration affecting the user. */
+    get: operations["getSso"];
+  };
 }
 
 export interface components {
   schemas: {
+    AcceptAuthProviderChangeRequest: {
+      id: string;
+    };
     AnnouncementDto: {
       type:
         | "FEATURE_BATCH_OPERATIONS"
@@ -954,6 +990,11 @@ export interface components {
       ssoGlobal: components["schemas"]["SsoGlobalPublicConfigDTO"];
       ssoOrganizations: components["schemas"]["SsoOrganizationsPublicConfigDTO"];
     };
+    AuthProviderDto: {
+      authType?: "GOOGLE" | "GITHUB" | "OAUTH2" | "SSO" | "SSO_GLOBAL";
+      id?: string;
+      ssoDomain?: string;
+    };
     AutoTranslationConfigModel: {
       /**
        * @description If true, import will trigger batch operation to translate the new new keys.
@@ -980,6 +1021,7 @@ export interface components {
       /** @description If true, new keys will be automatically translated via batch operation using translation memory when 100% match is found */
       usingTranslationMemory: boolean;
     };
+    /** @example Links to avatar images */
     Avatar: {
       large: string;
       thumbnail: string;
@@ -1046,7 +1088,8 @@ export interface components {
         | "TAG_KEYS"
         | "UNTAG_KEYS"
         | "SET_KEYS_NAMESPACE"
-        | "AUTOMATION";
+        | "AUTOMATION"
+        | "BILLING_TRIAL_EXPIRATION_NOTICE";
       /**
        * Format: int64
        * @description The time when the job was last updated (status change)
@@ -1294,6 +1337,12 @@ export interface components {
     ContentDeliveryConfigModel: {
       autoPublish: boolean;
       /**
+       * @description If true, HTML tags are escaped in the exported file.
+       *
+       * e.g. Key <b>hello</b> will be exported as &lt;b&gt;hello&lt;/b&gt;
+       */
+      escapeHtml: boolean;
+      /**
        * @description This is a template that defines the structure of the resulting .zip file content.
        *
        * The template is a string that can contain the following placeholders: {namespace}, {languageTag},
@@ -1345,7 +1394,8 @@ export interface components {
         | "JSON_I18NEXT"
         | "CSV"
         | "RESX_ICU"
-        | "XLSX";
+        | "XLSX"
+        | "APPLE_XCSTRINGS";
       /** Format: int64 */
       id: number;
       /**
@@ -1405,6 +1455,12 @@ export interface components {
        */
       contentStorageId?: number;
       /**
+       * @description If true, HTML tags are escaped in the exported file.
+       *
+       * e.g. Key <b>hello</b> will be exported as &lt;b&gt;hello&lt;/b&gt;
+       */
+      escapeHtml: boolean;
+      /**
        * @description This is a template that defines the structure of the resulting .zip file content.
        *
        * The template is a string that can contain the following placeholders: {namespace}, {languageTag},
@@ -1456,7 +1512,8 @@ export interface components {
         | "JSON_I18NEXT"
         | "CSV"
         | "RESX_ICU"
-        | "XLSX";
+        | "XLSX"
+        | "APPLE_XCSTRINGS";
       /**
        * @description Languages to be contained in export.
        *
@@ -1602,6 +1659,7 @@ export interface components {
       clientSecret: string;
       domain: string;
       enabled: boolean;
+      force: boolean;
       tokenUri: string;
     };
     CreateTaskRequest: {
@@ -1620,7 +1678,7 @@ export interface components {
        * @example 1
        */
       languageId: number;
-      name: string;
+      name?: string;
       type: "TRANSLATE" | "REVIEW";
     };
     CreditBalanceModel: {
@@ -1628,7 +1686,13 @@ export interface components {
       bucketSize: number;
       /** Format: int64 */
       creditBalance: number;
-      /** Format: int64 */
+      /**
+       * Format: int64
+       * @deprecated
+       * @description Customers were able to buy extra credits separately in the past.
+       *
+       * This option is not available anymore and this field is kept only for backward compatibility purposes and is always 0.
+       */
       extraCreditBalance: number;
     };
     DeleteKeysDto: {
@@ -1705,7 +1769,9 @@ export interface components {
         | "PAST_DUE"
         | "UNPAID"
         | "ERROR"
-        | "KEY_USED_BY_ANOTHER_INSTANCE";
+        | "TRIALING"
+        | "KEY_USED_BY_ANOTHER_INSTANCE"
+        | "UNKNOWN";
     };
     EntityDescriptionWithRelations: {
       data: { [key: string]: { [key: string]: unknown } };
@@ -1743,11 +1809,14 @@ export interface components {
         | "key_exists"
         | "third_party_auth_error_message"
         | "third_party_auth_no_email"
+        | "third_party_auth_non_matching_email"
         | "third_party_auth_no_sub"
         | "third_party_auth_unknown_error"
         | "email_already_verified"
         | "third_party_unauthorized"
         | "third_party_google_workspace_mismatch"
+        | "third_party_switch_initiated"
+        | "third_party_switch_conflict"
         | "username_already_exists"
         | "username_or_password_invalid"
         | "user_already_has_permissions"
@@ -1762,7 +1831,7 @@ export interface components {
         | "expired_jwt_token"
         | "general_jwt_error"
         | "cannot_find_suitable_address_part"
-        | "address_part_not_unique"
+        | "slug_not_unique"
         | "user_is_not_member_of_organization"
         | "organization_has_no_other_owner"
         | "user_has_no_project_access"
@@ -1829,6 +1898,7 @@ export interface components {
         | "cannot_create_organization"
         | "wrong_current_password"
         | "wrong_param_type"
+        | "user_missing_password"
         | "expired_super_jwt_token"
         | "cannot_delete_your_own_account"
         | "cannot_sort_by_this_column"
@@ -1950,7 +2020,6 @@ export interface components {
         | "cannot_subscribe_to_free_plan"
         | "plan_auto_assignment_only_for_free_plans"
         | "plan_auto_assignment_only_for_private_plans"
-        | "plan_auto_assignment_organization_ids_not_in_for_organization_ids"
         | "task_not_found"
         | "task_not_finished"
         | "task_not_open"
@@ -1963,12 +2032,26 @@ export interface components {
         | "sso_cant_verify_user"
         | "sso_auth_missing_domain"
         | "sso_domain_not_found_or_disabled"
+        | "authentication_method_disabled"
         | "native_authentication_disabled"
         | "invitation_organization_mismatch"
         | "user_is_managed_by_organization"
         | "cannot_set_sso_provider_missing_fields"
         | "namespaces_cannot_be_disabled_when_namespace_exists"
-        | "namespace_cannot_be_used_when_feature_is_disabled";
+        | "namespace_cannot_be_used_when_feature_is_disabled"
+        | "sso_domain_not_allowed"
+        | "sso_login_forced_for_this_account"
+        | "use_sso_for_authentication_instead"
+        | "date_has_to_be_in_the_future"
+        | "custom_plan_and_plan_id_cannot_be_set_together"
+        | "specify_plan_id_or_custom_plan"
+        | "custom_plans_has_to_be_private"
+        | "cannot_create_free_plan_with_prices"
+        | "subscription_not_scheduled_for_cancellation"
+        | "cannot_cancel_trial"
+        | "cannot_update_without_modification"
+        | "current_subscription_is_not_trialing"
+        | "sorting_and_paging_is_not_supported_when_using_cursor";
       params?: { [key: string]: unknown }[];
     };
     ExistenceEntityDescription: {
@@ -2000,10 +2083,17 @@ export interface components {
         | "JSON_I18NEXT"
         | "CSV"
         | "RESX_ICU"
-        | "XLSX";
+        | "XLSX"
+        | "APPLE_XCSTRINGS";
       mediaType: string;
     };
     ExportParams: {
+      /**
+       * @description If true, HTML tags are escaped in the exported file.
+       *
+       * e.g. Key <b>hello</b> will be exported as &lt;b&gt;hello&lt;/b&gt;
+       */
+      escapeHtml: boolean;
       /**
        * @description This is a template that defines the structure of the resulting .zip file content.
        *
@@ -2056,7 +2146,8 @@ export interface components {
         | "JSON_I18NEXT"
         | "CSV"
         | "RESX_ICU"
-        | "XLSX";
+        | "XLSX"
+        | "APPLE_XCSTRINGS";
       /**
        * @description Languages to be contained in export.
        *
@@ -2210,6 +2301,7 @@ export interface components {
         | "STRINGS"
         | "STRINGSDICT"
         | "APPLE_XLIFF"
+        | "APPLE_XCSTRINGS"
         | "PROPERTIES_ICU"
         | "PROPERTIES_JAVA"
         | "PROPERTIES_UNKNOWN"
@@ -2236,6 +2328,12 @@ export interface components {
        * When null, Tolgee will try to guess the language from the file contents or file name.
        */
       languageTag?: string;
+      /**
+       * @description Tags of languages to be imported. When null, all languages from will be imported.
+       *
+       * This field is useful when the file contains multiple languages and you want to import only some of them. For example when importing Apple String Catalog (APPLE_XCSTRINGS), you might want only to import the base language.
+       */
+      languageTagsToImport?: string[];
       /** @description Namespace to import the file to. If not provided, the key will be imported without namespace. */
       namespace?: string;
     };
@@ -2372,6 +2470,7 @@ export interface components {
       languageTag?: string;
       preferredOrganization?: components["schemas"]["PrivateOrganizationModel"];
       serverConfiguration: components["schemas"]["PublicConfigurationDTO"];
+      ssoInfo?: components["schemas"]["PublicSsoTenantModel"];
       userInfo?: components["schemas"]["PrivateUserAccountModel"];
     };
     JwtAuthenticationResponse: {
@@ -2579,6 +2678,11 @@ export interface components {
       /** @description There is a context available for this key */
       contextPresent: boolean;
       /**
+       * Format: int64
+       * @description The time when the key was created
+       */
+      createdAt: number;
+      /**
        * @description The namespace of the key
        * @example homepage
        */
@@ -2662,6 +2766,7 @@ export interface components {
        */
       nextCursor?: string;
       page?: components["schemas"]["PageMetadata"];
+      pagedModel?: components["schemas"]["PagedModelKeyWithTranslationsModel"];
       /** @description Provided languages data */
       selectedLanguages: components["schemas"]["LanguageModel"][];
     };
@@ -2913,6 +3018,45 @@ export interface components {
       /** @example homepage */
       name: string;
     };
+    NotificationModel: {
+      /** Format: date-time */
+      createdAt?: string;
+      /** Format: int64 */
+      id: number;
+      linkedTask?: components["schemas"]["TaskModel"];
+      originatingUser?: components["schemas"]["SimpleUserAccountModel"];
+      project?: components["schemas"]["SimpleProjectModel"];
+      type:
+        | "TASK_ASSIGNED"
+        | "TASK_FINISHED"
+        | "TASK_CANCELED"
+        | "MFA_ENABLED"
+        | "MFA_DISABLED"
+        | "PASSWORD_CHANGED";
+    };
+    NotificationSettingGroupModel: {
+      email: boolean;
+      inApp: boolean;
+    };
+    NotificationSettingModel: {
+      accountSecurity: components["schemas"]["NotificationSettingGroupModel"];
+      tasks: components["schemas"]["NotificationSettingGroupModel"];
+    };
+    NotificationSettingsRequest: {
+      /** @example IN_APP */
+      channel: "IN_APP" | "EMAIL";
+      /** @description True if the setting should be enabled, false for disabled */
+      enabled: boolean;
+      /** @example TASKS */
+      group: "ACCOUNT_SECURITY" | "TASKS";
+    };
+    NotificationsMarkSeenRequest: {
+      /**
+       * @description Notification IDs to be marked as seen
+       * @example 1,2,3
+       */
+      notificationIds: number[];
+    };
     OAuthPublicConfigDTO: {
       clientId?: string;
       enabled: boolean;
@@ -3038,6 +3182,12 @@ export interface components {
       };
       page?: components["schemas"]["PageMetadata"];
     };
+    PagedModelKeyWithTranslationsModel: {
+      _embedded?: {
+        keys?: components["schemas"]["KeyWithTranslationsModel"][];
+      };
+      page?: components["schemas"]["PageMetadata"];
+    };
     PagedModelLanguageModel: {
       _embedded?: {
         languages?: components["schemas"]["LanguageModel"][];
@@ -3053,6 +3203,12 @@ export interface components {
     PagedModelNamespaceModel: {
       _embedded?: {
         namespaces?: components["schemas"]["NamespaceModel"][];
+      };
+      page?: components["schemas"]["PageMetadata"];
+    };
+    PagedModelNotificationModel: {
+      _embedded?: {
+        notificationModelList?: components["schemas"]["NotificationModel"][];
       };
       page?: components["schemas"]["PageMetadata"];
     };
@@ -3152,6 +3308,18 @@ export interface components {
       };
       page?: components["schemas"]["PageMetadata"];
     };
+    PagedModelWithNextCursorNotificationModel: {
+      _embedded?: {
+        notificationModelList?: components["schemas"]["NotificationModel"][];
+      };
+      /**
+       * @description Cursor to get next data
+       * @example eyJrZXlJZCI6eyJkaXJlY3Rpb24iOiJBU0MiLCJ2YWx1ZSI6IjEwMDAwMDAxMjAifX0=
+       */
+      nextCursor?: string;
+      page?: components["schemas"]["PageMetadata"];
+      pagedModel?: components["schemas"]["PagedModelNotificationModel"];
+    };
     PatModel: {
       /** Format: int64 */
       createdAt: number;
@@ -3179,10 +3347,6 @@ export interface components {
       updatedAt: number;
       user: components["schemas"]["SimpleUserAccountModel"];
     };
-    /**
-     * @description Current user's direct permission
-     * @example MANAGE
-     */
     PermissionModel: {
       /**
        * @deprecated
@@ -3337,6 +3501,7 @@ export interface components {
       usage: components["schemas"]["UsageModel"];
     };
     PrivateOrganizationModel: {
+      activeCloudSubscription?: components["schemas"]["PublicCloudSubscriptionModel"];
       avatar?: components["schemas"]["Avatar"];
       basePermissions: components["schemas"]["PermissionModel"];
       /**
@@ -3381,6 +3546,7 @@ export interface components {
       accountType: "LOCAL" | "MANAGED" | "THIRD_PARTY";
       avatar?: components["schemas"]["Avatar"];
       deletable: boolean;
+      domain?: string;
       emailAwaitingVerification?: string;
       globalServerRole: "USER" | "ADMIN";
       /** Format: int64 */
@@ -3388,6 +3554,12 @@ export interface components {
       mfaEnabled: boolean;
       name?: string;
       needsSuperJwtToken: boolean;
+      thirdPartyAuthType?:
+        | "GOOGLE"
+        | "GITHUB"
+        | "OAUTH2"
+        | "SSO"
+        | "SSO_GLOBAL";
       username: string;
     };
     ProjectActivityAuthorModel: {
@@ -3599,6 +3771,53 @@ export interface components {
     PublicBillingConfigurationDTO: {
       enabled: boolean;
     };
+    PublicCloudPlanModel: {
+      enabledFeatures: (
+        | "GRANULAR_PERMISSIONS"
+        | "PRIORITIZED_FEATURE_REQUESTS"
+        | "PREMIUM_SUPPORT"
+        | "DEDICATED_SLACK_CHANNEL"
+        | "ASSISTED_UPDATES"
+        | "DEPLOYMENT_ASSISTANCE"
+        | "BACKUP_CONFIGURATION"
+        | "TEAM_TRAINING"
+        | "ACCOUNT_MANAGER"
+        | "STANDARD_SUPPORT"
+        | "PROJECT_LEVEL_CONTENT_STORAGES"
+        | "WEBHOOKS"
+        | "MULTIPLE_CONTENT_DELIVERY_CONFIGS"
+        | "AI_PROMPT_CUSTOMIZATION"
+        | "SLACK_INTEGRATION"
+        | "TASKS"
+        | "SSO"
+        | "ORDER_TRANSLATION"
+      )[];
+      free: boolean;
+      /** Format: int64 */
+      id: number;
+      includedUsage: components["schemas"]["PlanIncludedUsageModel"];
+      name: string;
+      nonCommercial: boolean;
+      public: boolean;
+      type: "PAY_AS_YOU_GO" | "FIXED" | "SLOTS_FIXED";
+    };
+    /** @example Current active subscription info */
+    PublicCloudSubscriptionModel: {
+      cancelAtPeriodEnd: boolean;
+      currentBillingPeriod?: "MONTHLY" | "YEARLY";
+      plan: components["schemas"]["PublicCloudPlanModel"];
+      status:
+        | "ACTIVE"
+        | "CANCELED"
+        | "PAST_DUE"
+        | "UNPAID"
+        | "ERROR"
+        | "TRIALING"
+        | "KEY_USED_BY_ANOTHER_INSTANCE"
+        | "UNKNOWN";
+      /** Format: int64 */
+      trialEnd?: number;
+    };
     PublicConfigurationDTO: {
       allowRegistrations: boolean;
       appName: string;
@@ -3626,6 +3845,8 @@ export interface components {
       screenshotsUrl: string;
       showVersion: boolean;
       slack: components["schemas"]["SlackDTO"];
+      /** Format: int32 */
+      translationsViewLanguagesLimit: number;
       userCanCreateOrganizations: boolean;
       userSourceField: boolean;
       version: string;
@@ -3637,6 +3858,11 @@ export interface components {
       id: number;
       organizationName?: string;
       projectName?: string;
+    };
+    PublicSsoTenantModel: {
+      domain: string;
+      force: boolean;
+      global: boolean;
     };
     PublicUsageModel: {
       /**
@@ -3676,7 +3902,10 @@ export interface components {
       currentTranslations: number;
       /**
        * Format: int64
-       * @description Extra credits, which are neither refilled nor reset every month. These credits are used when there are no standard credits
+       * @deprecated
+       * @description Customers were able to buy extra credits separately in the past.
+       *
+       * This option is not available anymore and this field is kept only for backward compatibility purposes and is always 0.
        */
       extraCreditBalance: number;
       /**
@@ -3707,6 +3936,7 @@ export interface components {
        */
       translationsLimit: number;
     };
+    /** @example Quick start data for current user */
     QuickStartModel: {
       completedSteps: string[];
       finished: boolean;
@@ -4061,6 +4291,7 @@ export interface components {
       clientSecret: string;
       domain: string;
       enabled: boolean;
+      force: boolean;
       global: boolean;
       tokenUri: string;
     };
@@ -4093,11 +4324,14 @@ export interface components {
         | "key_exists"
         | "third_party_auth_error_message"
         | "third_party_auth_no_email"
+        | "third_party_auth_non_matching_email"
         | "third_party_auth_no_sub"
         | "third_party_auth_unknown_error"
         | "email_already_verified"
         | "third_party_unauthorized"
         | "third_party_google_workspace_mismatch"
+        | "third_party_switch_initiated"
+        | "third_party_switch_conflict"
         | "username_already_exists"
         | "username_or_password_invalid"
         | "user_already_has_permissions"
@@ -4112,7 +4346,7 @@ export interface components {
         | "expired_jwt_token"
         | "general_jwt_error"
         | "cannot_find_suitable_address_part"
-        | "address_part_not_unique"
+        | "slug_not_unique"
         | "user_is_not_member_of_organization"
         | "organization_has_no_other_owner"
         | "user_has_no_project_access"
@@ -4179,6 +4413,7 @@ export interface components {
         | "cannot_create_organization"
         | "wrong_current_password"
         | "wrong_param_type"
+        | "user_missing_password"
         | "expired_super_jwt_token"
         | "cannot_delete_your_own_account"
         | "cannot_sort_by_this_column"
@@ -4300,7 +4535,6 @@ export interface components {
         | "cannot_subscribe_to_free_plan"
         | "plan_auto_assignment_only_for_free_plans"
         | "plan_auto_assignment_only_for_private_plans"
-        | "plan_auto_assignment_organization_ids_not_in_for_organization_ids"
         | "task_not_found"
         | "task_not_finished"
         | "task_not_open"
@@ -4313,12 +4547,26 @@ export interface components {
         | "sso_cant_verify_user"
         | "sso_auth_missing_domain"
         | "sso_domain_not_found_or_disabled"
+        | "authentication_method_disabled"
         | "native_authentication_disabled"
         | "invitation_organization_mismatch"
         | "user_is_managed_by_organization"
         | "cannot_set_sso_provider_missing_fields"
         | "namespaces_cannot_be_disabled_when_namespace_exists"
-        | "namespace_cannot_be_used_when_feature_is_disabled";
+        | "namespace_cannot_be_used_when_feature_is_disabled"
+        | "sso_domain_not_allowed"
+        | "sso_login_forced_for_this_account"
+        | "use_sso_for_authentication_instead"
+        | "date_has_to_be_in_the_future"
+        | "custom_plan_and_plan_id_cannot_be_set_together"
+        | "specify_plan_id_or_custom_plan"
+        | "custom_plans_has_to_be_private"
+        | "cannot_create_free_plan_with_prices"
+        | "subscription_not_scheduled_for_cancellation"
+        | "cannot_cancel_trial"
+        | "cannot_update_without_modification"
+        | "current_subscription_is_not_trialing"
+        | "sorting_and_paging_is_not_supported_when_using_cursor";
       params?: { [key: string]: unknown }[];
       success: boolean;
     };
@@ -4407,10 +4655,10 @@ export interface components {
       /** Format: int64 */
       dueDate?: number;
       language: components["schemas"]["LanguageModel"];
-      name: string;
+      name?: string;
       /** Format: int64 */
       number: number;
-      state: "NEW" | "IN_PROGRESS" | "DONE" | "CLOSED";
+      state: "NEW" | "IN_PROGRESS" | "FINISHED" | "CANCELED";
       /** Format: int64 */
       totalItems: number;
       type: "TRANSLATE" | "REVIEW";
@@ -4442,11 +4690,11 @@ export interface components {
       /** Format: int64 */
       dueDate?: number;
       language: components["schemas"]["LanguageModel"];
-      name: string;
+      name?: string;
       /** Format: int64 */
       number: number;
       project: components["schemas"]["SimpleProjectModel"];
-      state: "NEW" | "IN_PROGRESS" | "DONE" | "CLOSED";
+      state: "NEW" | "IN_PROGRESS" | "FINISHED" | "CANCELED";
       /** Format: int64 */
       totalItems: number;
       type: "TRANSLATE" | "REVIEW";
@@ -4622,7 +4870,7 @@ export interface components {
        * @example 1661172869000
        */
       dueDate?: number;
-      name: string;
+      name?: string;
     };
     UploadedImageModel: {
       /** Format: date-time */
@@ -4798,6 +5046,7 @@ export interface operations {
       };
     };
   };
+  /** Returns URL which can be used to authenticate user using third party SSO service */
   getAuthenticationUrl: {
     responses: {
       /** OK */
@@ -6098,6 +6347,213 @@ export interface operations {
       };
     };
   };
+  getCurrentAuthProvider: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AuthProviderDto"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
+  deleteCurrentAuthProvider: {
+    responses: {
+      /** OK */
+      200: unknown;
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
+  getChangedAuthProvider: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AuthProviderDto"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
+  acceptChangeAuthProvider: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["JwtAuthenticationResponse"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcceptAuthProviderChangeRequest"];
+      };
+    };
+  };
+  rejectChangeAuthProvider: {
+    responses: {
+      /** OK */
+      200: unknown;
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
   getInfo_5: {
     responses: {
       /** OK */
@@ -6494,6 +6950,199 @@ export interface operations {
             | components["schemas"]["ErrorResponseTyped"]
             | components["schemas"]["ErrorResponseBody"];
         };
+      };
+    };
+  };
+  getNotifications: {
+    parameters: {
+      query: {
+        /** Zero-based page index (0..N) */
+        page?: number;
+        /** The size of the page to be returned */
+        size?: number;
+        /** Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+        sort?: string[];
+        /**
+         * Filter by the `seen` parameter.
+         *
+         * no value = request everything
+         *
+         * true = only seen
+         *
+         * false = only unseen
+         */
+        filterSeen?: boolean;
+        cursor?: string;
+      };
+    };
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PagedModelWithNextCursorNotificationModel"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
+  /** Returns notification settings of the currently logged in user */
+  getNotificationsSettings: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["NotificationSettingModel"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
+  /** Saves new value for given parameters */
+  putNotificationSetting: {
+    responses: {
+      /** OK */
+      200: unknown;
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NotificationSettingsRequest"];
+      };
+    };
+  };
+  markNotificationsAsSeen: {
+    responses: {
+      /** OK */
+      200: unknown;
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NotificationsMarkSeenRequest"];
       };
     };
   };
@@ -10123,7 +10772,8 @@ export interface operations {
           | "JSON_I18NEXT"
           | "CSV"
           | "RESX_ICU"
-          | "XLSX";
+          | "XLSX"
+          | "APPLE_XCSTRINGS";
         /**
          * Delimiter to structure file content.
          *
@@ -10202,16 +10852,25 @@ export interface operations {
          * e.g. Key hello[0] will be exported as {"hello": ["..."]}
          */
         supportArrays?: boolean;
+        /**
+         * If true, HTML tags are escaped in the exported file.
+         *
+         * e.g. Key <b>hello</b> will be exported as &lt;b&gt;hello&lt;/b&gt;
+         */
+        escapeHtml?: boolean;
       };
       path: {
         projectId: number;
       };
     };
     responses: {
-      /** OK */
+      /**
+       * When multiple files are exported, they are zipped and returned as a single zip file.
+       * When a single file is exported, it is returned directly.
+       */
       200: {
         content: {
-          "application/json": components["schemas"]["StreamingResponseBody"];
+          "application/*": unknown;
         };
       };
       /** Bad Request */
@@ -10256,10 +10915,13 @@ export interface operations {
       };
     };
     responses: {
-      /** OK */
+      /**
+       * When multiple files are exported, they are zipped and returned as a single zip file.
+       * When a single file is exported, it is returned directly.
+       */
       200: {
         content: {
-          "application/json": components["schemas"]["StreamingResponseBody"];
+          "application/*": unknown;
         };
       };
       /** Bad Request */
@@ -11804,18 +12466,28 @@ export interface operations {
         filterUntranslatedInLang?: string;
         /** Selects only keys, where translation is provided in specified language */
         filterTranslatedInLang?: string;
+        /** Selects only keys, where translation was auto translated for specified languages. */
+        filterAutoTranslatedInLang?: string[];
         /** Selects only keys with screenshots */
         filterHasScreenshot?: boolean;
         /** Selects only keys without screenshots */
         filterHasNoScreenshot?: boolean;
         /**
-         * Filter namespaces.
+         * Selects only keys with provided namespaces.
          *
          * To filter default namespace, set to empty string.
          */
         filterNamespace?: string[];
+        /**
+         * Selects only keys without provided namespaces.
+         *
+         * To filter default namespace, set to empty string.
+         */
+        filterNoNamespace?: string[];
         /** Selects only keys with provided tag */
         filterTag?: string[];
+        /** Selects only keys without provided tag */
+        filterNoTag?: string[];
         /** Selects only keys, where translation in provided langs is in outdated state */
         filterOutdatedLanguage?: string[];
         /** Selects only keys, where translation in provided langs is not in outdated state */
@@ -11830,6 +12502,10 @@ export interface operations {
         filterTaskKeysNotDone?: boolean;
         /** Filter task keys which are `done` */
         filterTaskKeysDone?: boolean;
+        /** Filter keys with unresolved comments in lang */
+        filterHasUnresolvedCommentsInLang?: string[];
+        /** Filter keys with any comments in lang */
+        filterHasCommentsInLang?: string[];
       };
       path: {
         projectId: number;
@@ -14334,9 +15010,9 @@ export interface operations {
     parameters: {
       query: {
         /** Filter tasks by state */
-        filterState?: ("NEW" | "IN_PROGRESS" | "DONE" | "CLOSED")[];
+        filterState?: ("NEW" | "IN_PROGRESS" | "FINISHED" | "CANCELED")[];
         /** Filter tasks without state */
-        filterNotState?: ("NEW" | "IN_PROGRESS" | "DONE" | "CLOSED")[];
+        filterNotState?: ("NEW" | "IN_PROGRESS" | "FINISHED" | "CANCELED")[];
         /** Filter tasks by assignee */
         filterAssignee?: number[];
         /** Filter tasks by type */
@@ -14355,8 +15031,6 @@ export interface operations {
         filterKey?: number[];
         /** Filter tasks by agency */
         filterAgency?: number[];
-        /** Exclude "done" tasks which are older than specified timestamp */
-        filterDoneMinClosedAt?: number;
         /** Exclude tasks which were closed before specified timestamp */
         filterNotClosedBefore?: number;
         /** Zero-based page index (0..N) */
@@ -14771,6 +15445,54 @@ export interface operations {
       200: {
         content: {
           "application/json": number[];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
+  cancelTask: {
+    parameters: {
+      path: {
+        taskNumber: number;
+        projectId: number;
+      };
+    };
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["TaskModel"];
         };
       };
       /** Bad Request */
@@ -15330,18 +16052,28 @@ export interface operations {
         filterUntranslatedInLang?: string;
         /** Selects only keys, where translation is provided in specified language */
         filterTranslatedInLang?: string;
+        /** Selects only keys, where translation was auto translated for specified languages. */
+        filterAutoTranslatedInLang?: string[];
         /** Selects only keys with screenshots */
         filterHasScreenshot?: boolean;
         /** Selects only keys without screenshots */
         filterHasNoScreenshot?: boolean;
         /**
-         * Filter namespaces.
+         * Selects only keys with provided namespaces.
          *
          * To filter default namespace, set to empty string.
          */
         filterNamespace?: string[];
+        /**
+         * Selects only keys without provided namespaces.
+         *
+         * To filter default namespace, set to empty string.
+         */
+        filterNoNamespace?: string[];
         /** Selects only keys with provided tag */
         filterTag?: string[];
+        /** Selects only keys without provided tag */
+        filterNoTag?: string[];
         /** Selects only keys, where translation in provided langs is in outdated state */
         filterOutdatedLanguage?: string[];
         /** Selects only keys, where translation in provided langs is not in outdated state */
@@ -15356,6 +16088,10 @@ export interface operations {
         filterTaskKeysNotDone?: boolean;
         /** Filter task keys which are `done` */
         filterTaskKeysDone?: boolean;
+        /** Filter keys with unresolved comments in lang */
+        filterHasUnresolvedCommentsInLang?: string[];
+        /** Filter keys with any comments in lang */
+        filterHasCommentsInLang?: string[];
         /** Zero-based page index (0..N) */
         page?: number;
         /** The size of the page to be returned */
@@ -15599,18 +16335,28 @@ export interface operations {
         filterUntranslatedInLang?: string;
         /** Selects only keys, where translation is provided in specified language */
         filterTranslatedInLang?: string;
+        /** Selects only keys, where translation was auto translated for specified languages. */
+        filterAutoTranslatedInLang?: string[];
         /** Selects only keys with screenshots */
         filterHasScreenshot?: boolean;
         /** Selects only keys without screenshots */
         filterHasNoScreenshot?: boolean;
         /**
-         * Filter namespaces.
+         * Selects only keys with provided namespaces.
          *
          * To filter default namespace, set to empty string.
          */
         filterNamespace?: string[];
+        /**
+         * Selects only keys without provided namespaces.
+         *
+         * To filter default namespace, set to empty string.
+         */
+        filterNoNamespace?: string[];
         /** Selects only keys with provided tag */
         filterTag?: string[];
+        /** Selects only keys without provided tag */
+        filterNoTag?: string[];
         /** Selects only keys, where translation in provided langs is in outdated state */
         filterOutdatedLanguage?: string[];
         /** Selects only keys, where translation in provided langs is not in outdated state */
@@ -15625,6 +16371,10 @@ export interface operations {
         filterTaskKeysNotDone?: boolean;
         /** Filter task keys which are `done` */
         filterTaskKeysDone?: boolean;
+        /** Filter keys with unresolved comments in lang */
+        filterHasUnresolvedCommentsInLang?: string[];
+        /** Filter keys with any comments in lang */
+        filterHasCommentsInLang?: string[];
       };
       path: {
         projectId: number;
@@ -18148,9 +18898,9 @@ export interface operations {
     parameters: {
       query: {
         /** Filter tasks by state */
-        filterState?: ("NEW" | "IN_PROGRESS" | "DONE" | "CLOSED")[];
+        filterState?: ("NEW" | "IN_PROGRESS" | "FINISHED" | "CANCELED")[];
         /** Filter tasks without state */
-        filterNotState?: ("NEW" | "IN_PROGRESS" | "DONE" | "CLOSED")[];
+        filterNotState?: ("NEW" | "IN_PROGRESS" | "FINISHED" | "CANCELED")[];
         /** Filter tasks by assignee */
         filterAssignee?: number[];
         /** Filter tasks by type */
@@ -18169,8 +18919,6 @@ export interface operations {
         filterKey?: number[];
         /** Filter tasks by agency */
         filterAgency?: number[];
-        /** Exclude "done" tasks which are older than specified timestamp */
-        filterDoneMinClosedAt?: number;
         /** Exclude tasks which were closed before specified timestamp */
         filterNotClosedBefore?: number;
         /** Zero-based page index (0..N) */
@@ -18360,6 +19108,51 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["SuperTokenRequest"];
+      };
+    };
+  };
+  /** Returns the organization that manages a given user or null */
+  getManagedBy: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PrivateOrganizationModel"];
+        };
+      };
+      /** No SSO configuration available for this user */
+      204: never;
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
       };
     };
   };
@@ -18603,6 +19396,51 @@ export interface operations {
           "application/json": components["schemas"]["CollectionModelSimpleOrganizationModel"];
         };
       };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
+  /** Returns information about sso configuration affecting the user. */
+  getSso: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PublicSsoTenantModel"];
+        };
+      };
+      /** No SSO configuration available for this user */
+      204: never;
       /** Bad Request */
       400: {
         content: {

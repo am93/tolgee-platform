@@ -1,15 +1,14 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Dialog, IconButton, Tooltip } from '@mui/material';
-import { Translate01 } from '@untitled-ui/icons-react';
-import { TaskDetail as TaskDetailIcon } from 'tg.component/CustomIcons';
+import { InfoCircle, Translate01 } from '@untitled-ui/icons-react';
 import { useTranslate } from '@tolgee/react';
 
 import { components } from 'tg.service/apiSchema.generated';
 import { stopAndPrevent } from 'tg.fixtures/eventHandler';
 import { TaskTooltipContent } from './TaskTooltipContent';
 import { TaskDetail } from './TaskDetail';
-import { getTaskUrl } from './utils';
+import { getTaskUrl } from 'tg.constants/links';
 
 type TaskModel = components['schemas']['TaskModel'];
 type SimpleProjectModel = components['schemas']['SimpleProjectModel'];
@@ -21,7 +20,6 @@ type Props = {
   project: SimpleProjectModel;
   children: React.ReactElement<any, any>;
   actions?: Action[] | React.ReactNode | ((task: TaskModel) => React.ReactNode);
-  newTaskActions: boolean;
 } & Omit<React.ComponentProps<typeof Tooltip>, 'title'>;
 
 export const TaskTooltip = ({
@@ -29,7 +27,6 @@ export const TaskTooltip = ({
   project,
   children,
   actions = ['open', 'detail'],
-  newTaskActions,
   ...tooltipProps
 }: Props) => {
   const [taskDetailData, setTaskDetailData] = useState<TaskModel>();
@@ -48,7 +45,7 @@ export const TaskTooltip = ({
               <IconButton
                 data-cy="task-tooltip-action-translations"
                 component={Link}
-                to={getTaskUrl(project, task.number)}
+                to={getTaskUrl(project.id, task.number)}
                 size="small"
               >
                 <Translate01 width={20} height={20} />
@@ -66,7 +63,7 @@ export const TaskTooltip = ({
                 size="small"
                 onClick={() => setTaskDetailData(task)}
               >
-                <TaskDetailIcon width={20} height={20} />
+                <InfoCircle width={20} height={20} />
               </IconButton>
             </Tooltip>
           )}

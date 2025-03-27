@@ -25,9 +25,10 @@ import { BaseProjectView } from '../BaseProjectView';
 import { TranslationsToolbar } from './TranslationsToolbar';
 import { BatchOperationsChangeIndicator } from './BatchOperations/BatchOperationsChangeIndicator';
 import { FloatingToolsPanel } from './ToolsPanel/FloatingToolsPanel';
-import { Prefilter } from './prefilters/Prefilter';
 import { TranslationsTaskDetail } from 'tg.ee';
 import { TaskAllDonePlaceholder } from 'tg.ee';
+import { EmptyState } from 'tg.component/common/EmptyState';
+import { countFilters } from './TranslationFilters/summary';
 
 const StyledContainer = styled('div')`
   display: grid;
@@ -54,7 +55,7 @@ export const Translations = () => {
   );
 
   const filtersOrSearchApplied = useTranslationsSelector((c) =>
-    Boolean(Object.values(c.filters).filter(Boolean).length || c.urlSearch)
+    Boolean(countFilters(c.filters) !== 0 || c.urlSearch)
   );
 
   const memoizedFiltersOrSearchApplied = useMemo(
@@ -112,10 +113,12 @@ export const Translations = () => {
         <T keyName="translations_nothing_found" />
       </EmptyListMessage>
     ) : prefilter?.task && prefilter.taskFilterNotDone ? (
-      <TaskAllDonePlaceholder
-        taskNumber={prefilter.task}
-        projectId={project.id}
-      />
+      <EmptyState loading={isLoading || isFetching}>
+        <TaskAllDonePlaceholder
+          taskNumber={prefilter.task}
+          projectId={project.id}
+        />
+      </EmptyState>
     ) : (
       <EmptyListMessage
         loading={isLoading || isFetching}
@@ -156,10 +159,9 @@ export const Translations = () => {
           }),
         ],
       ]}
-      wrapperProps={{ pb: 0 }}
+      wrapperProps={{ style: { paddingBottom: 0, paddingTop: '3px' } }}
     >
       <BatchOperationsChangeIndicator />
-      {prefilter && <Prefilter prefilter={prefilter} />}
       <TranslationsHeader />
       <StyledContainer>
         {translationsEmpty ? (

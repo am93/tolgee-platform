@@ -47,3 +47,6 @@ export const useAddProjectMenuItems = () => (existingItems) => existingItems;
 export const useAddUserMenuItems = () => (existingItems) => existingItems;
 export const useAddAdministrationMenuItems = () => (existingItems) =>
   existingItems;
+export const TrialAnnouncement = Empty;
+export const TrialChip = Empty;
+export const TaskInfoMessage = Empty;

@@ -36,6 +36,12 @@ const PasswordResetView = React.lazy(
 const AcceptInvitationView = React.lazy(
   () => import('./security/AcceptInvitationView')
 );
+const SsoMigrationView = React.lazy(
+  () => import('./security/SsoMigrationView')
+);
+const AcceptAuthProviderChangeView = React.lazy(
+  () => import('./security/AcceptAuthProviderChangeView')
+);
 
 export const RootRouter = () => {
   return (
@@ -64,6 +70,12 @@ export const RootRouter = () => {
         <Route path={LINKS.ACCEPT_INVITATION.template}>
           <AcceptInvitationView />
         </Route>
+        <PrivateRoute path={LINKS.SSO_MIGRATION.template}>
+          <SsoMigrationView />
+        </PrivateRoute>
+        <PrivateRoute path={LINKS.ACCEPT_AUTH_PROVIDER_CHANGE.template}>
+          <AcceptAuthProviderChangeView />
+        </PrivateRoute>
         <PrivateRoute path={LINKS.GO_TO_CLOUD_BILLING.template}>
           <OrganizationBillingRedirect selfHosted={false} />
         </PrivateRoute>

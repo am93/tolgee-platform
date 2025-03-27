@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Plus,
   XClose,
@@ -10,41 +10,39 @@ import {
 } from '@untitled-ui/icons-react';
 import {
   Badge,
-  Box,
   Button,
   ButtonGroup,
   IconButton,
   styled,
+  Tooltip,
 } from '@mui/material';
 import { useTranslate } from '@tolgee/react';
 
 import { useProjectPermissions } from 'tg.hooks/useProjectPermissions';
 import { LanguagesMenu } from 'tg.component/common/form/LanguagesSelect/LanguagesMenu';
 import { QuickStartHighlight } from 'tg.component/layout/QuickStartGuide/QuickStartHighlight';
-import { getActiveFilters } from 'tg.component/translation/translationFilters/getActiveFilters';
-import { FiltersMenu } from 'tg.component/translation/translationFilters/FiltersMenu';
-import { useFiltersContent } from 'tg.component/translation/translationFilters/useFiltersContent';
 import { HeaderSearchField } from 'tg.component/layout/HeaderSearchField';
-import { PrefilterTaskShowDoneSwitch } from 'tg.ee';
+import { TranslationFiltersPopup } from 'tg.views/projects/translations/TranslationFilters/TranslationFiltersPopup';
+import { TranslationSortMenu } from 'tg.component/translation/translationSort/TranslationSortMenu';
+import { Sort } from 'tg.component/CustomIcons';
+import { useProject } from 'tg.hooks/useProject';
+import { countFilters } from 'tg.views/projects/translations/TranslationFilters/summary';
 
 import {
   useTranslationsActions,
   useTranslationsSelector,
 } from '../context/TranslationsContext';
 import { ViewMode } from '../context/types';
-import { StickyHeader } from './StickyHeader';
 
 const StyledContainer = styled('div')`
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   margin-left: ${({ theme }) => theme.spacing(-1)};
   margin-right: ${({ theme }) => theme.spacing(-2)};
   padding: ${({ theme }) => theme.spacing(0, 1.5)};
   z-index: ${({ theme }) => theme.zIndex.appBar + 1};
   transition: transform 0.2s ease-in-out;
-  padding-bottom: 4px;
-  padding-top: 9px;
 `;
 
 const StyledSpaced = styled('div')`
@@ -98,32 +96,31 @@ export const TranslationControlsCompact: React.FC<Props> = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const search = useTranslationsSelector((v) => v.search);
   const languages = useTranslationsSelector((v) => v.languages);
+  const order = useTranslationsSelector((v) => v.order);
   const { t } = useTranslate();
+  const project = useProject();
+  const allLanguages = useTranslationsSelector((c) => c.languages);
 
-  const { setSearch, changeView, selectLanguages } = useTranslationsActions();
+  const { setSearch, changeView, selectLanguages, setOrder } =
+    useTranslationsActions();
   const view = useTranslationsSelector((v) => v.view);
   const selectedLanguages = useTranslationsSelector((c) => c.selectedLanguages);
-  const [anchorFiltersEl, setAnchorFiltersEl] =
-    useState<HTMLButtonElement | null>(null);
+  const selectedLanguagesMapped =
+    allLanguages?.filter((l) => selectedLanguages?.includes(l.tag)) ?? [];
+
   const [anchorLanguagesEl, setAnchorLanguagesEl] =
     useState<HTMLButtonElement | null>(null);
+  const [anchorSortEl, setAnchorSortEl] = useState<HTMLButtonElement | null>(
+    null
+  );
+  const anchorFilters = useRef<HTMLButtonElement>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
   };
   const filters = useTranslationsSelector((c) => c.filters);
-  const taskPrefilter = useTranslationsSelector(
-    (c) => c.prefilter?.task !== undefined
-  );
-  const activeFilters = getActiveFilters(filters);
-  const { setFilters } = useTranslationsActions();
-  const selectedLanguagesMapped =
-    languages?.filter((l) => selectedLanguages?.includes(l.tag)) ?? [];
-  const filtersContent = useFiltersContent(
-    filters,
-    setFilters,
-    selectedLanguagesMapped
-  );
+  const { setFilters, addFilter, removeFilter } = useTranslationsActions();
 
   const handleLanguageChange = (languages: string[]) => {
     selectLanguages(languages);
@@ -138,118 +135,134 @@ export const TranslationControlsCompact: React.FC<Props> = ({
   };
 
   return (
-    <StickyHeader height={45}>
-      <StyledContainer>
-        {searchOpen ? (
-          <StyledSearchSpaced>
-            <StyledSearch
-              value={search || ''}
-              onSearchChange={handleSearchChange}
-              label={null}
-              variant="outlined"
-              placeholder={t('standard_search_label')}
-              style={{
-                height: 35,
-                maxWidth: 'unset',
-                width: '100%',
-              }}
-            />
-            <StyledIconButton size="small" onClick={() => setSearchOpen(false)}>
-              <XClose />
-            </StyledIconButton>
-          </StyledSearchSpaced>
-        ) : (
-          <>
-            <StyledSpaced>
-              <Badge color="primary" badgeContent={search.length} variant="dot">
-                <StyledButtonWrapper>
-                  <StyledIconButton
-                    size="small"
-                    onClick={() => setSearchOpen(true)}
-                  >
-                    <SearchSm />
-                  </StyledIconButton>
-                </StyledButtonWrapper>
-              </Badge>
+    <StyledContainer>
+      {searchOpen ? (
+        <StyledSearchSpaced>
+          <StyledSearch
+            value={search || ''}
+            onSearchChange={handleSearchChange}
+            label={null}
+            variant="outlined"
+            placeholder={t('standard_search_label')}
+            style={{
+              height: 35,
+              maxWidth: 'unset',
+              width: '100%',
+            }}
+          />
+          <StyledIconButton size="small" onClick={() => setSearchOpen(false)}>
+            <XClose />
+          </StyledIconButton>
+        </StyledSearchSpaced>
+      ) : (
+        <>
+          <StyledSpaced>
+            <Badge color="primary" badgeContent={search.length} variant="dot">
+              <StyledButtonWrapper>
+                <StyledIconButton
+                  size="small"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <SearchSm />
+                </StyledIconButton>
+              </StyledButtonWrapper>
+            </Badge>
 
-              <Badge color="primary" badgeContent={activeFilters?.length}>
-                <StyledButtonWrapper>
-                  <StyledIconButton
-                    size="small"
-                    onClick={(e) => setAnchorFiltersEl(e.currentTarget)}
-                  >
-                    <FilterLines />
-                  </StyledIconButton>
-                </StyledButtonWrapper>
-              </Badge>
-              <FiltersMenu
-                filters={filters}
-                anchorEl={anchorFiltersEl}
-                onClose={() => setAnchorFiltersEl(null)}
-                filtersContent={filtersContent}
-                onChange={setFilters}
+            <Badge color="primary" badgeContent={countFilters(filters)}>
+              <StyledButtonWrapper>
+                <StyledIconButton
+                  size="small"
+                  onClick={() => setFiltersOpen(true)}
+                  ref={anchorFilters}
+                >
+                  <FilterLines />
+                </StyledIconButton>
+              </StyledButtonWrapper>
+            </Badge>
+            {filtersOpen && (
+              <TranslationFiltersPopup
+                value={filters}
+                anchorEl={anchorFilters.current!}
+                onClose={() => setFiltersOpen(false)}
+                actions={{ setFilters, removeFilter, addFilter }}
+                projectId={project.id}
+                selectedLanguages={selectedLanguagesMapped}
+                showClearButton
               />
-            </StyledSpaced>
-
-            <Box overflow="hidden" position="relative">
-              {taskPrefilter && (
-                <PrefilterTaskShowDoneSwitch
-                  sx={{
-                    ml: 0,
-                  }}
-                />
-              )}
-            </Box>
-
-            <StyledSpaced>
-              <StyledIconButton
-                size="small"
-                onClick={(e) => setAnchorLanguagesEl(e.currentTarget)}
+            )}
+            <Tooltip title={t('translation_controls_sort_tooltip')}>
+              <Badge
+                color="primary"
+                variant="dot"
+                badgeContent={order === 'keyName' ? 0 : 1}
+                overlap="circular"
               >
-                <Globe02 />
-              </StyledIconButton>
-
-              <LanguagesMenu
-                anchorEl={anchorLanguagesEl}
-                onClose={() => setAnchorLanguagesEl(null)}
-                onChange={handleLanguageChange}
-                value={selectedLanguages}
-                languages={languages}
-              />
-
-              <ButtonGroup>
-                <StyledToggleButton
-                  color={view === 'LIST' ? 'primary' : 'default'}
-                  onClick={() => handleViewChange('LIST')}
-                  data-cy="translations-view-list-button"
+                <StyledIconButton
+                  size="small"
+                  onClick={(e) => setAnchorSortEl(e.currentTarget)}
+                  data-cy="translation-controls-sort"
                 >
-                  <LayoutLeft />
-                </StyledToggleButton>
-                <StyledToggleButton
-                  color={view === 'TABLE' ? 'primary' : 'default'}
-                  onClick={() => handleViewChange('TABLE')}
-                  data-cy="translations-view-table-button"
-                >
-                  <LayoutGrid02 />
-                </StyledToggleButton>
-              </ButtonGroup>
+                  <Sort />
+                </StyledIconButton>
+              </Badge>
+            </Tooltip>
 
-              {projectPermissions.satisfiesPermission('keys.edit') && (
-                <QuickStartHighlight itemKey="add_key">
-                  <StyledIconButton
-                    color="primary"
-                    size="small"
-                    onClick={handleAddTranslation}
-                    data-cy="translations-add-button"
-                  >
-                    <Plus />
-                  </StyledIconButton>
-                </QuickStartHighlight>
-              )}
-            </StyledSpaced>
-          </>
-        )}
-      </StyledContainer>
-    </StickyHeader>
+            <TranslationSortMenu
+              anchorEl={anchorSortEl}
+              onClose={() => setAnchorSortEl(null)}
+              onChange={setOrder}
+              value={order}
+            />
+          </StyledSpaced>
+
+          <StyledSpaced>
+            <StyledIconButton
+              size="small"
+              onClick={(e) => setAnchorLanguagesEl(e.currentTarget)}
+            >
+              <Globe02 />
+            </StyledIconButton>
+
+            <LanguagesMenu
+              anchorEl={anchorLanguagesEl}
+              onClose={() => setAnchorLanguagesEl(null)}
+              onChange={handleLanguageChange}
+              value={selectedLanguages}
+              languages={languages}
+            />
+
+            <ButtonGroup>
+              <StyledToggleButton
+                color={view === 'LIST' ? 'primary' : 'default'}
+                onClick={() => handleViewChange('LIST')}
+                data-cy="translations-view-list-button"
+              >
+                <LayoutLeft />
+              </StyledToggleButton>
+              <StyledToggleButton
+                color={view === 'TABLE' ? 'primary' : 'default'}
+                onClick={() => handleViewChange('TABLE')}
+                data-cy="translations-view-table-button"
+              >
+                <LayoutGrid02 />
+              </StyledToggleButton>
+            </ButtonGroup>
+
+            {projectPermissions.satisfiesPermission('keys.edit') && (
+              <QuickStartHighlight itemKey="add_key">
+                <StyledIconButton
+                  color="primary"
+                  size="small"
+                  onClick={handleAddTranslation}
+                  data-cy="translations-add-button"
+                >
+                  <Plus />
+                </StyledIconButton>
+              </QuickStartHighlight>
+            )}
+          </StyledSpaced>
+        </>
+      )}
+    </StyledContainer>
   );
 };

@@ -10,8 +10,16 @@ import org.springframework.stereotype.Service
 
 @Service
 class TenantServiceOssStub : TenantService {
-  override fun getEnabledConfigByDomain(domain: String): SsoTenantConfig {
+  override fun getEnabledConfigByDomainOrNull(domain: String?): SsoTenantConfig? {
+    return null
+  }
+
+  override fun getEnabledConfigByDomain(domain: String?): SsoTenantConfig {
     throw NotFoundException(Message.SSO_DOMAIN_NOT_FOUND_OR_DISABLED)
+  }
+
+  override fun isSsoForcedForDomain(domain: String?): Boolean {
+    return false
   }
 
   override fun save(tenant: SsoTenant): SsoTenant {
@@ -46,6 +54,7 @@ class TenantServiceOssStub : TenantService {
   override fun createOrUpdate(
     request: SsoTenantDto,
     organization: Organization,
+    allowChangeDomain: Boolean,
   ): SsoTenant {
     // no-op
     throw UnsupportedOperationException("Not included in OSS")

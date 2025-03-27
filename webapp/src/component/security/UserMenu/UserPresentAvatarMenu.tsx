@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { Badge, IconButton, MenuItem, Popover, styled } from '@mui/material';
+import { IconButton, MenuItem, Popover, styled } from '@mui/material';
 import { T, useTranslate } from '@tolgee/react';
 import { Link, useHistory, useLocation } from 'react-router-dom';
 
-import { usePreferredOrganization, useUser } from 'tg.globalContext/helpers';
+import {
+  useIsSsoMigrationRequired,
+  usePreferredOrganization,
+  useUser,
+} from 'tg.globalContext/helpers';
 import { UserAvatar } from 'tg.component/common/avatar/UserAvatar';
 import { LINKS, PARAMS } from 'tg.constants/links';
 import { components } from 'tg.service/apiSchema.generated';
@@ -14,7 +18,7 @@ import { ThemeItem } from './ThemeItem';
 import { LanguageItem } from './LanguageItem';
 import { useGlobalActions } from 'tg.globalContext/GlobalContext';
 import { UserMenuItems } from './UserMenuItems';
-import { billingMenuItems, useUserTaskCount } from 'tg.ee';
+import { billingMenuItems } from 'tg.ee';
 
 type OrganizationModel = components['schemas']['OrganizationModel'];
 
@@ -39,8 +43,6 @@ const StyledDivider = styled('div')`
 `;
 
 export const UserPresentAvatarMenu: React.FC = () => {
-  const taskCount = useUserTaskCount();
-
   const { logout } = useGlobalActions();
   const { preferredOrganization, updatePreferredOrganization } =
     usePreferredOrganization();
@@ -49,6 +51,8 @@ export const UserPresentAvatarMenu: React.FC = () => {
   const history = useHistory();
   const [anchorEl, setAnchorEl] = useState(null);
   const user = useUser()!;
+
+  const isSsoMigrationRequired = useIsSsoMigrationRequired();
 
   const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     //@ts-ignore
@@ -93,9 +97,7 @@ export const UserPresentAvatarMenu: React.FC = () => {
         onClick={handleOpen}
         size="large"
       >
-        <Badge badgeContent={taskCount} color="primary" variant="dot">
-          <UserAvatar />
-        </Badge>
+        <UserAvatar />
       </StyledIconButton>
       <StyledPopover
         id="user-menu"
@@ -120,7 +122,7 @@ export const UserPresentAvatarMenu: React.FC = () => {
           subtitle={user.username}
         />
         <UserMenuItems onClose={handleClose} />
-        {preferredOrganization && (
+        {!isSsoMigrationRequired && preferredOrganization && (
           <>
             <StyledDivider />
             <MenuHeader

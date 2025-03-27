@@ -1,5 +1,4 @@
-import { CompatClient, Stomp } from '@stomp/stompjs';
-// @ts-ignore
+import { CompatClient, Stomp } from '@stomp/stompjs'; // @ts-ignore
 import SockJS from 'sockjs-client/dist/sockjs';
 import { components } from 'tg.service/apiSchema.generated';
 
@@ -32,10 +31,15 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
   options.serverUrl = options.serverUrl || window.origin;
 
   let _client: CompatClient | undefined;
+  let _deactivated = false;
   let connected = false;
   let subscriptions: Subscription<any>[] = [];
 
   const resubscribe = () => {
+    if (_deactivated) {
+      return;
+    }
+
     if (_client) {
       subscriptions.forEach((subscription) => {
         subscribeToStompChannel(subscription);
@@ -43,7 +47,7 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
     }
   };
 
-  const subscribeToStompChannel = (subscription) => {
+  const subscribeToStompChannel = (subscription: Subscription<any>) => {
     if (connected) {
       const stompSubscription = _client!.subscribe(
         subscription.channel,
@@ -66,6 +70,10 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
   }
 
   function connectIfNotAlready() {
+    if (_deactivated) {
+      return;
+    }
+
     const client = getClient();
 
     const onConnected = function () {
@@ -110,10 +118,14 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
    * @param callback Callback function to be executed when event is triggered
    * @return Function Function unsubscribing the event listening
    */
-  function subscribe<T extends Channel>(
+  function subscribe<T extends ChannelProject | ChannelUser>(
     channel: T,
     callback: (data: Data<T>) => void
   ): () => void {
+    if (_deactivated) {
+      return () => {};
+    }
+
     connectIfNotAlready();
     const subscription: Subscription<any> = { channel, callback };
     subscriptions.push(subscription);
@@ -131,15 +143,25 @@ export const WebsocketClient = (options: TranslationsClientOptions) => {
     }
   }
 
+  function deactivate() {
+    _deactivated = true;
+    disconnect();
+  }
+
   function removeSubscription(subscription: Subscription<any>) {
     subscriptions = subscriptions.filter((it) => it !== subscription);
   }
 
-  return Object.freeze({ subscribe, disconnect });
+  return Object.freeze({ subscribe, deactivate });
 };
 
-export type EventType = 'translation-data-modified' | 'batch-job-progress';
-export type Channel = `/projects/${number}/${EventType}`;
+export type EventTypeProject =
+  | 'translation-data-modified'
+  | 'batch-job-progress';
+export type ChannelProject = `/projects/${number}/${EventTypeProject}`;
+
+export type EventTypeUser = 'notifications-changed';
+export type ChannelUser = `/users/${number}/${EventTypeUser}`;
 
 export type TranslationsModifiedData = WebsocketEvent<{
   translations: EntityModification<'translation'>[] | null;
@@ -152,6 +174,11 @@ export type BatchJobProgress = WebsocketEvent<{
   status: BatchJobModelStatus;
   total: number;
   errorMessage: string | undefined;
+}>;
+
+export type NotificationsChanged = WebsocketEvent<{
+  currentlyUnseenCount: number;
+  newNotification?: components['schemas']['NotificationModel'];
 }>;
 
 export type EntityModification<T> = T extends keyof schemas
@@ -217,4 +244,6 @@ export type Data<T> = T extends `/projects/${number}/translation-data-modified`
   ? TranslationsModifiedData
   : T extends `/projects/${number}/batch-job-progress`
   ? BatchJobProgress
+  : T extends `/users/${number}/notifications-changed`
+  ? NotificationsChanged
   : never;

@@ -1,26 +1,33 @@
 import { LayoutGrid02, LayoutLeft, Plus } from '@untitled-ui/icons-react';
-import { Box, Button, ButtonGroup, styled } from '@mui/material';
+import {
+  Badge,
+  Button,
+  ButtonGroup,
+  IconButton,
+  styled,
+  Tooltip,
+} from '@mui/material';
 import { T, useTranslate } from '@tolgee/react';
 
 import { LanguagesSelect } from 'tg.component/common/form/LanguagesSelect/LanguagesSelect';
 import { useProjectPermissions } from 'tg.hooks/useProjectPermissions';
-import { TranslationFilters } from 'tg.component/translation/translationFilters/TranslationFilters';
+import { TranslationFilters } from 'tg.views/projects/translations/TranslationFilters/TranslationFilters';
 import { QuickStartHighlight } from 'tg.component/layout/QuickStartGuide/QuickStartHighlight';
 import { HeaderSearchField } from 'tg.component/layout/HeaderSearchField';
-import { PrefilterTaskShowDoneSwitch } from 'tg.ee';
 
 import {
   useTranslationsActions,
   useTranslationsSelector,
 } from '../context/TranslationsContext';
-import { StickyHeader } from './StickyHeader';
+import { Sort } from 'tg.component/CustomIcons';
+import { TranslationSortMenu } from 'tg.component/translation/translationSort/TranslationSortMenu';
+import { useState } from 'react';
+import { useProject } from 'tg.hooks/useProject';
 
 const StyledContainer = styled('div')`
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: start;
-  padding-bottom: 8px;
-  padding-top: 13px;
 `;
 
 const StyledSpaced = styled('div')`
@@ -43,94 +50,109 @@ type Props = {
 
 export const TranslationControls: React.FC<Props> = ({ onDialogOpen }) => {
   const { satisfiesPermission } = useProjectPermissions();
+  const project = useProject();
   const canCreateKeys = satisfiesPermission('keys.create');
   const search = useTranslationsSelector((v) => v.search);
   const languages = useTranslationsSelector((v) => v.languages);
   const { t } = useTranslate();
+  const [anchorSortEl, setAnchorSortEl] = useState<HTMLButtonElement | null>(
+    null
+  );
 
-  const { setSearch, selectLanguages, changeView } = useTranslationsActions();
+  const { setSearch, selectLanguages, changeView, setOrder } =
+    useTranslationsActions();
   const view = useTranslationsSelector((v) => v.view);
   const selectedLanguages = useTranslationsSelector((c) => c.selectedLanguages);
   const allLanguages = useTranslationsSelector((c) => c.languages);
   const filters = useTranslationsSelector((c) => c.filters);
-  const { setFilters } = useTranslationsActions();
+  const order = useTranslationsSelector((c) => c.order);
+  const { setFilters, removeFilter, addFilter } = useTranslationsActions();
   const selectedLanguagesMapped =
     allLanguages?.filter((l) => selectedLanguages?.includes(l.tag)) ?? [];
-  const taskPrefilter = useTranslationsSelector(
-    (c) => c.prefilter?.task !== undefined
-  );
 
   const handleAddTranslation = () => {
     onDialogOpen();
   };
 
   return (
-    <StickyHeader height={55}>
-      <StyledContainer>
-        <StyledSpaced>
-          <StyledTranslationsSearchField
-            value={search || ''}
-            onSearchChange={setSearch}
-            label={null}
-            variant="outlined"
-            placeholder={t('standard_search_label')}
-          />
-          <TranslationFilters
-            selectedLanguages={selectedLanguagesMapped}
-            value={filters}
-            onChange={setFilters}
-          />
-        </StyledSpaced>
+    <StyledContainer>
+      <StyledSpaced>
+        <StyledTranslationsSearchField
+          value={search || ''}
+          onSearchChange={setSearch}
+          label={null}
+          variant="outlined"
+          placeholder={t('standard_search_label')}
+        />
+        <TranslationFilters
+          projectId={project.id}
+          selectedLanguages={selectedLanguagesMapped}
+          value={filters}
+          actions={{ setFilters, removeFilter, addFilter }}
+        />
 
-        <Box overflow="hidden" position="relative">
-          {taskPrefilter && (
-            <PrefilterTaskShowDoneSwitch
-              sx={{
-                ml: 0,
-              }}
-            />
-          )}
-        </Box>
-
-        <StyledSpaced>
-          <LanguagesSelect
-            onChange={selectLanguages}
-            value={selectedLanguages || []}
-            languages={languages || []}
-            context="translations"
-          />
-          <ButtonGroup>
-            <StyledToggleButton
-              color={view === 'LIST' ? 'primary' : 'default'}
-              onClick={() => changeView('LIST')}
-              data-cy="translations-view-list-button"
+        <Tooltip title={t('translation_controls_sort_tooltip')}>
+          <Badge
+            color="primary"
+            variant="dot"
+            badgeContent={order === 'keyName' ? 0 : 1}
+            overlap="circular"
+          >
+            <IconButton
+              onClick={(e) => setAnchorSortEl(e.currentTarget)}
+              data-cy="translation-controls-sort"
             >
-              <LayoutLeft />
-            </StyledToggleButton>
-            <StyledToggleButton
-              color={view === 'TABLE' ? 'primary' : 'default'}
-              onClick={() => changeView('TABLE')}
-              data-cy="translations-view-table-button"
-            >
-              <LayoutGrid02 />
-            </StyledToggleButton>
-          </ButtonGroup>
+              <Sort />
+            </IconButton>
+          </Badge>
+        </Tooltip>
 
-          {canCreateKeys && (
-            <QuickStartHighlight itemKey="add_key">
-              <Button
-                startIcon={<Plus width={19} height={19} />}
-                color="primary"
-                variant="contained"
-                onClick={handleAddTranslation}
-                data-cy="translations-add-button"
-              >
-                <T keyName="key_add" />
-              </Button>
-            </QuickStartHighlight>
-          )}
-        </StyledSpaced>
-      </StyledContainer>
-    </StickyHeader>
+        <TranslationSortMenu
+          anchorEl={anchorSortEl}
+          onClose={() => setAnchorSortEl(null)}
+          onChange={setOrder}
+          value={order}
+        />
+      </StyledSpaced>
+
+      <StyledSpaced>
+        <LanguagesSelect
+          onChange={selectLanguages}
+          value={selectedLanguages || []}
+          languages={languages || []}
+          context="translations"
+        />
+        <ButtonGroup>
+          <StyledToggleButton
+            color={view === 'LIST' ? 'primary' : 'default'}
+            onClick={() => changeView('LIST')}
+            data-cy="translations-view-list-button"
+          >
+            <LayoutLeft />
+          </StyledToggleButton>
+          <StyledToggleButton
+            color={view === 'TABLE' ? 'primary' : 'default'}
+            onClick={() => changeView('TABLE')}
+            data-cy="translations-view-table-button"
+          >
+            <LayoutGrid02 />
+          </StyledToggleButton>
+        </ButtonGroup>
+
+        {canCreateKeys && (
+          <QuickStartHighlight itemKey="add_key">
+            <Button
+              startIcon={<Plus width={19} height={19} />}
+              color="primary"
+              variant="contained"
+              onClick={handleAddTranslation}
+              data-cy="translations-add-button"
+            >
+              <T keyName="key_add" />
+            </Button>
+          </QuickStartHighlight>
+        )}
+      </StyledSpaced>
+    </StyledContainer>
   );
 };

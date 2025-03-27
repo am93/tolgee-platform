@@ -1,9 +1,14 @@
 declare namespace DataCy {
     export type Value = 
+        "accept-auth-provider-change-accept" |
+        "accept-auth-provider-change-decline" |
+        "accept-auth-provider-change-info-text" |
         "accept-invitation-accept" |
         "accept-invitation-decline" |
         "accept-invitation-info-text" |
         "account-security-initial-password-set" |
+        "account-security-provider-connect" |
+        "account-security-provider-disconnect" |
         "account-security-set-password-instructions-sent" |
         "active-plan-license-key-input" |
         "activity-compact" |
@@ -11,12 +16,16 @@ declare namespace DataCy {
         "activity-detail" |
         "activity-detail-dialog" |
         "administration-access-message" |
+        "administration-assign-trial-assign-button" |
+        "administration-assign-trial-button" |
+        "administration-billing-edit-custom-plan-button" |
+        "administration-billing-exclusive-plan-chip" |
+        "administration-billing-trial-badge" |
         "administration-cloud-plan-field-feature" |
         "administration-cloud-plan-field-free" |
         "administration-cloud-plan-field-included-mt-credits" |
         "administration-cloud-plan-field-included-translations" |
         "administration-cloud-plan-field-name" |
-        "administration-cloud-plan-field-non-commercial" |
         "administration-cloud-plan-field-price-monthly" |
         "administration-cloud-plan-field-price-per-thousand-mt-credits" |
         "administration-cloud-plan-field-price-per-thousand-translations" |
@@ -25,14 +34,16 @@ declare namespace DataCy {
         "administration-cloud-plan-field-stripe-product" |
         "administration-cloud-plan-field-type" |
         "administration-cloud-plan-field-type-item" |
-        "administration-cloud-plan-organization-assign-switch" |
         "administration-cloud-plan-submit-button" |
         "administration-cloud-plans-item" |
         "administration-cloud-plans-item-delete" |
         "administration-cloud-plans-item-edit" |
         "administration-cloud-plans-item-public-badge" |
+        "administration-create-custom-plan-button" |
+        "administration-customize-plan-switch" |
         "administration-debug-customer-account-message" |
         "administration-debug-customer-exit-button" |
+        "administration-edit-current-plan-button" |
         "administration-ee-license-key-input" |
         "administration-ee-license-release-key-button" |
         "administration-ee-plan-cancel-button" |
@@ -62,6 +73,12 @@ declare namespace DataCy {
         "administration-organizations-list-item" |
         "administration-organizations-projects-button" |
         "administration-organizations-settings-button" |
+        "administration-plan-field-non-commercial" |
+        "administration-plan-selector" |
+        "administration-subscriptions-cloud-plan-name" |
+        "administration-subscriptions-custom-plans-item" |
+        "administration-subscriptions-plan-popover" |
+        "administration-trial-end-date-field" |
         "administration-user-debug-account" |
         "administration-user-delete-user" |
         "administration-user-disable-user" |
@@ -106,7 +123,6 @@ declare namespace DataCy {
         "batch-operations-submit-button" |
         "batch-progress" |
         "batch-select-item" |
-        "billing-actual-extra-credits" |
         "billing-actual-period" |
         "billing-actual-period-end" |
         "billing-actual-used-monthly-credits" |
@@ -179,6 +195,7 @@ declare namespace DataCy {
         "expiration-date-field" |
         "expiration-date-picker" |
         "expiration-select" |
+        "export-escape_html-selector" |
         "export-format-selector" |
         "export-format-selector-item" |
         "export-language-selector" |
@@ -191,6 +208,8 @@ declare namespace DataCy {
         "export-state-selector-item" |
         "export-submit-button" |
         "export-support_arrays-selector" |
+        "filter-item" |
+        "filter-item-exclude" |
         "former-user-name" |
         "generate-api-key-dialog-description-input" |
         "generate-pat-dialog-content" |
@@ -203,7 +222,7 @@ declare namespace DataCy {
         "global-confirmation-dialog" |
         "global-confirmation-hard-mode-text-field" |
         "global-editor" |
-        "global-empty-list" |
+        "global-empty-state" |
         "global-form-cancel-button" |
         "global-form-save-button" |
         "global-form-select" |
@@ -215,7 +234,6 @@ declare namespace DataCy {
         "global-paginated-list" |
         "global-plus-button" |
         "global-search-field" |
-        "global-snackbars" |
         "global-user-menu-button" |
         "import-conflict-resolution-dialog" |
         "import-conflicts-not-resolved-dialog" |
@@ -304,6 +322,7 @@ declare namespace DataCy {
         "languages-modify-cancel-button" |
         "languages-prepared-language-box" |
         "login-button" |
+        "login-provider" |
         "machine-translations-settings-language-enabled-service" |
         "machine-translations-settings-language-options" |
         "machine-translations-settings-language-primary-service" |
@@ -347,6 +366,13 @@ declare namespace DataCy {
         "namespaces-select-text-field" |
         "namespaces-selector" |
         "navigation-item" |
+        "notifications-button" |
+        "notifications-count" |
+        "notifications-empty-message" |
+        "notifications-list" |
+        "notifications-list-item" |
+        "notifications-settings-icon" |
+        "notistack-snackbar" |
         "order-translation-confirmation" |
         "order-translation-confirmation-ok" |
         "order-translation-invitation-checkbox" |
@@ -494,6 +520,7 @@ declare namespace DataCy {
         "settings-menu-item" |
         "sign-up-submit-button" |
         "spending-limit-exceeded-popover" |
+        "sso-migration-info-text" |
         "storage-add-item-button" |
         "storage-form-azure-connection-string" |
         "storage-form-azure-container-name" |
@@ -512,12 +539,17 @@ declare namespace DataCy {
         "storage-item-edit" |
         "storage-list-item" |
         "storage-subtitle" |
+        "submenu-item" |
+        "subscribe-cancels-trial-plan-tooltip" |
+        "subscriptions-trial-alert" |
+        "subscriptions-trial-alert-reaching-the-limit" |
         "tag-autocomplete-input" |
         "tag-autocomplete-option" |
         "task-date-picker" |
         "task-detail" |
         "task-detail-author" |
         "task-detail-characters" |
+        "task-detail-close" |
         "task-detail-closed-at" |
         "task-detail-created-at" |
         "task-detail-download-report" |
@@ -530,10 +562,15 @@ declare namespace DataCy {
         "task-detail-user-keys" |
         "task-detail-user-words" |
         "task-detail-words" |
+        "task-info-message" |
         "task-item" |
         "task-item-detail" |
         "task-item-menu" |
         "task-label-name" |
+        "task-menu-item-cancel-task" |
+        "task-menu-item-mark-as-done" |
+        "task-menu-item-reopen" |
+        "task-number" |
         "task-preview" |
         "task-preview-alert" |
         "task-preview-characters" |
@@ -558,8 +595,16 @@ declare namespace DataCy {
         "top-banner" |
         "top-banner-content" |
         "top-banner-dismiss-button" |
+        "topbap-trial-popover-content" |
+        "topbar-trial-announcement" |
+        "topbar-trial-chip" |
+        "topbar-trial-popover-compare-plans-button" |
+        "topbar-trial-popover-plan-features" |
+        "topbar-trial-popover-trial-plan-chip" |
         "transfer-project-apply-button" |
         "translation-agency-item" |
+        "translation-controls-sort" |
+        "translation-controls-sort-item" |
         "translation-create-description-input" |
         "translation-create-key-input" |
         "translation-create-namespace-input" |
@@ -592,15 +637,18 @@ declare namespace DataCy {
         "translations-cell-task-button" |
         "translations-comments-input" |
         "translations-comments-load-more-button" |
-        "translations-filter-clear-all" |
-        "translations-filter-option" |
+        "translations-filter-apply-for-all" |
+        "translations-filter-apply-for-expand" |
+        "translations-filter-apply-for-language" |
+        "translations-filter-apply-no-base" |
         "translations-filter-select" |
-        "translations-filters-subheader" |
+        "translations-filter-select-clear" |
         "translations-history-load-more-button" |
         "translations-key-cell-description" |
         "translations-key-count" |
         "translations-key-edit-description-field" |
         "translations-key-edit-key-field" |
+        "translations-key-name" |
         "translations-language-select-form-control" |
         "translations-language-select-item" |
         "translations-namespace-banner" |

@@ -9,6 +9,9 @@ const StyledListSubheader = styled(ListSubheader)`
   line-height: unset;
   padding-top: ${({ theme }) => theme.spacing(2)};
   padding-bottom: ${({ theme }) => theme.spacing(0.5)};
+  background: inherit;
+  background-image: inherit;
+  position: static;
 `;
 
 export const CompactMenuItem: React.FC<React.ComponentProps<typeof MenuItem>> =

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.tolgee.constants.Feature
 import io.tolgee.constants.Message
 import io.tolgee.development.testDataBuilder.data.SsoTestData
+import io.tolgee.dtos.request.auth.SignUpDto
 import io.tolgee.dtos.request.organization.OrganizationDto
 import io.tolgee.ee.component.PublicEnabledFeaturesProvider
 import io.tolgee.ee.data.OAuth2TokenResponse
@@ -11,6 +12,7 @@ import io.tolgee.ee.security.thirdParty.SsoDelegateEe
 import io.tolgee.ee.utils.SsoMultiTenantsMocks
 import io.tolgee.exceptions.NotFoundException
 import io.tolgee.fixtures.andIsForbidden
+import io.tolgee.fixtures.andIsUnauthorized
 import io.tolgee.model.enums.OrganizationRoleType
 import io.tolgee.service.TenantService
 import io.tolgee.testing.AuthorizedControllerTest
@@ -99,7 +101,7 @@ class SsoOrganizationsTest : AuthorizedControllerTest() {
   fun `does not return auth link when tenant is disabled`() {
     testData.tenant.enabled = false
     tenantService.save(testData.tenant)
-    val response = ssoMultiTenantsMocks.getAuthLink("registrationId").response
+    val response = ssoMultiTenantsMocks.getAuthLink("domain.com").response
     assertThat(response.status).isEqualTo(404)
     assertThat(response.contentAsString).contains(Message.SSO_DOMAIN_NOT_FOUND_OR_DISABLED.code)
   }
@@ -108,7 +110,7 @@ class SsoOrganizationsTest : AuthorizedControllerTest() {
   fun `does not auth user when tenant is disabled`() {
     testData.tenant.enabled = false
     tenantService.save(testData.tenant)
-    val response = ssoMultiTenantsMocks.authorize("registrationId", tokenUri = testData.tenant.tokenUri)
+    val response = ssoMultiTenantsMocks.authorize("domain.com", tokenUri = testData.tenant.tokenUri)
     assertThat(response.response.status).isEqualTo(404)
     assertThat(response.response.contentAsString).contains(Message.SSO_DOMAIN_NOT_FOUND_OR_DISABLED.code)
   }
@@ -126,13 +128,25 @@ class SsoOrganizationsTest : AuthorizedControllerTest() {
   fun `doesn't authorize user when token exchange fails`() {
     val response =
       ssoMultiTenantsMocks.authorize(
-        "registrationId",
+        "domain.com",
         ResponseEntity<OAuth2TokenResponse>(null, null, 401),
       )
     assertThat(response.response.status).isEqualTo(401)
     assertThat(response.response.contentAsString).contains(Message.SSO_TOKEN_EXCHANGE_FAILED.code)
     val userName = SsoMultiTenantsMocks.jwtClaimsSet.get("email") as String
     assertThrows<NotFoundException> { userAccountService.get(userName) }
+  }
+
+  @Test
+  fun `doesn't allow sign up when enabled for domain`() {
+    val dto =
+      SignUpDto(
+        name = "Pavel Novak",
+        password = "aaaaaaaaa",
+        email = "aaaa@domain.com",
+        organizationName = "Jejda",
+      )
+    performPost("/api/public/sign_up", dto).andIsUnauthorized
   }
 
   @Transactional
@@ -218,6 +232,6 @@ class SsoOrganizationsTest : AuthorizedControllerTest() {
   fun loginAsSsoUser(
     tokenResponse: ResponseEntity<OAuth2TokenResponse>? = SsoMultiTenantsMocks.defaultTokenResponse,
   ): MvcResult {
-    return ssoMultiTenantsMocks.authorize("registrationId", tokenResponse = tokenResponse)
+    return ssoMultiTenantsMocks.authorize("domain.com", tokenResponse = tokenResponse)
   }
 }

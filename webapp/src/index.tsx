@@ -55,6 +55,7 @@ const tolgee = Tolgee()
       de: () => import('./i18n/de.json').then((m) => m.default),
       pt: () => import('./i18n/pt.json').then((m) => m.default),
       da: () => import('./i18n/da.json').then((m) => m.default),
+      ja: () => import('./i18n/ja.json').then((m) => m.default),
     },
   });
 
@@ -76,8 +77,11 @@ const MainWrapper = () => {
                   {/* @ts-ignore */}
                   <ErrorBoundary>
                     <SnackbarProvider
-                      data-cy="global-snackbars"
                       anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
+                      SnackbarProps={{
+                        // @ts-ignore
+                        'data-cy': 'notistack-snackbar',
+                      }}
                     >
                       <GlobalContext>
                         <BottomPanelProvider>
